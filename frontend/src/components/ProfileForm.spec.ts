@@ -19,7 +19,7 @@ describe('ProfileForm', () => {
 
     const saved = wrapper.emitted('save')
     expect(saved).toHaveLength(1)
-    expect((saved![0][0] as Profile).firstName).toBe('Anna')
+    expect((saved![0]![0] as Profile).firstName).toBe('Anna')
   })
 
   it('blokuje zapis i pokazuje błąd przy niepoprawnym emailu (FR-6)', async () => {
