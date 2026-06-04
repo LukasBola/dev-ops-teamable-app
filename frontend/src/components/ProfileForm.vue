@@ -32,7 +32,7 @@ function onSave() {
 
 <template>
   <section class="mx-auto max-w-md rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-100">
-    <form class="flex flex-col gap-4" @submit.prevent="onSave">
+    <form class="flex flex-col gap-4" novalidate @submit.prevent="onSave">
       <div class="flex flex-col items-center gap-3">
         <img
           v-if="form.avatarUrl"
