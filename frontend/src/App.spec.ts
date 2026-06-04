@@ -23,7 +23,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await wrapper.get('[data-test="edit-button"]').trigger('click')
     await wrapper.get('[data-test="firstName"]').setValue('Zofia')
-    await wrapper.get('[data-test="save-button"]').trigger('click')
+    await wrapper.get('form').trigger('submit')
 
     expect(wrapper.find('[data-test="save-button"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Zofia')

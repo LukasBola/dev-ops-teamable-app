@@ -15,7 +15,7 @@ describe('ProfileForm', () => {
   it('zapisuje zmienione pola i emituje save (FR-4)', async () => {
     const wrapper = mount(ProfileForm, { props: { profile } })
     await wrapper.get('[data-test="firstName"]').setValue('Anna')
-    await wrapper.get('[data-test="save-button"]').trigger('click')
+    await wrapper.get('form').trigger('submit')
 
     const saved = wrapper.emitted('save')
     expect(saved).toHaveLength(1)
@@ -25,7 +25,7 @@ describe('ProfileForm', () => {
   it('blokuje zapis i pokazuje błąd przy niepoprawnym emailu (FR-6)', async () => {
     const wrapper = mount(ProfileForm, { props: { profile } })
     await wrapper.get('[data-test="email"]').setValue('zly-email')
-    await wrapper.get('[data-test="save-button"]').trigger('click')
+    await wrapper.get('form').trigger('submit')
 
     expect(wrapper.emitted('save')).toBeUndefined()
     expect(wrapper.get('[data-test="email-error"]').text()).not.toBe('')

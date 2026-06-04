@@ -77,7 +77,7 @@ function onSave() {
         <input
           data-test="email"
           v-model="form.email"
-          type="text"
+          type="email"
           class="rounded-lg border border-gray-300 px-3 py-2"
         />
         <span data-test="email-error" class="text-xs text-red-600">{{ emailError }}</span>
@@ -106,7 +106,6 @@ function onSave() {
           data-test="save-button"
           type="submit"
           class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
-          @click.prevent="onSave"
         >
           Zapisz
         </button>
