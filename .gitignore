@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+frontend/dist/
+
+# test artifacts
+coverage/
+playwright-report/
+test-results/
+
+# env / local
+.env
+.env.*
+!.env.example
+
+# editor / OS
+.DS_Store
