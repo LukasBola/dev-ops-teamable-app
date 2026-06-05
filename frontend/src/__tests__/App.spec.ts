@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import App from './App.vue'
+import App from '../App.vue'
 
 describe('App', () => {
   beforeEach(() => {

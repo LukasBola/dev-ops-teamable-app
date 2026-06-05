@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { useProfile } from './useProfile'
-import { getProfile } from '../services/profileService'
-import type { Profile } from '../types/profile'
+import { useProfile } from '../useProfile'
+import { getProfile } from '../../services/profileService'
+import type { Profile } from '../../types/profile'
 
 describe('useProfile', () => {
   beforeEach(() => {

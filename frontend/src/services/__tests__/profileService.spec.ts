@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { getProfile, saveProfile, STORAGE_KEY } from './profileService'
-import { DEFAULT_PROFILE, type Profile } from '../types/profile'
+import { getProfile, saveProfile, STORAGE_KEY } from '../profileService'
+import { DEFAULT_PROFILE, type Profile } from '../../types/profile'
 
 describe('profileService', () => {
   beforeEach(() => {

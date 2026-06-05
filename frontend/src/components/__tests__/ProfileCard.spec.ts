@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ProfileCard from './ProfileCard.vue'
-import type { Profile } from '../types/profile'
+import ProfileCard from '../ProfileCard.vue'
+import type { Profile } from '../../types/profile'
 
 const profile: Profile = {
   firstName: 'Jan',
