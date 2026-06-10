@@ -1,7 +1,7 @@
 # Teamable — Wymagania projektu
 
-> **Status dokumentu:** v0.2 (decyzje technologiczne podjęte, żywy dokument)
-> **Ostatnia aktualizacja:** 2026-06-04
+> **Status dokumentu:** v0.3 (Etap 2 — backend — w przygotowaniu, żywy dokument)
+> **Ostatnia aktualizacja:** 2026-06-10
 > **Charakter projektu:** projekt edukacyjny — aplikacja jest **poligonem do nauki DevOps**, nie celem samym w sobie.
 
 ---
@@ -55,6 +55,15 @@ Aplikacja (profil użytkownika) jest **pretekstem** — ma być na tyle prosta, 
 
 > Tabela jest orientacyjna i będzie aktualizowana. Kolejność etapów może się zmienić.
 
+### 2.4 Specyfikacje i plany implementacji (linki)
+
+Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers/`:
+
+| Etap | Spec (projekt techniczny) | Plan implementacji |
+|------|---------------------------|--------------------|
+| 1 — Frontend | [2026-06-04-etap1-frontend-profilu-design.md](docs/superpowers/specs/2026-06-04-etap1-frontend-profilu-design.md) | [2026-06-04-etap1-frontend-profilu.md](docs/superpowers/plans/2026-06-04-etap1-frontend-profilu.md) |
+| 2 — Backend + API | [2026-06-10-etap2-backend-design.md](docs/superpowers/specs/2026-06-10-etap2-backend-design.md) | _(do utworzenia po brainstormingu)_ |
+
 ---
 
 ## 3. Persona i kontekst użytkownika (lekko)
@@ -78,6 +87,19 @@ Identyfikatory (FR-x) ułatwią późniejsze powiązanie wymagań z testami.
 | FR-7 | Trwałość danych między odświeżeniami strony przez `localStorage`. | Po odświeżeniu strony zmiany są zachowane. |
 
 > FR-6 i FR-7 to dobre, „testowalne” wymagania — dają konkretne scenariusze dla testów jednostkowych i E2E. FR-7 (`localStorage`) jest w zakresie Etapu 1 zgodnie z decyzją (sekcja 8.1).
+
+### 4.1 Wymagania funkcjonalne (Etap 2 — Backend + API)
+
+Szczegóły projektowe: [spec Etapu 2](docs/superpowers/specs/2026-06-10-etap2-backend-design.md).
+
+| ID | Wymaganie | Kryterium akceptacji (skrót) |
+|----|-----------|------------------------------|
+| FR-8 | Trwałość profilu przez backend w pliku JSON na dysku; po ponownym otwarciu aplikacji wczytuje się ostatnio zapisany profil. | Po zapisie i restarcie aplikacji/serwera widać ostatnie dane (zastępuje `localStorage` z FR-7 jako mechanizm trwałości). |
+| FR-9 | Przy pierwszym uruchomieniu (brak zapisanych danych) profil ma puste wartości — bez danych i bez zdjęcia. | Czysty stan → puste pola, brak zdjęcia (zmienia domyślny seed z FR-1). |
+| FR-10 | Zdjęcie profilowe jest wysyłane na backend i zapisywane jako plik; po zapisaniu serwowane z backendu. | Po zapisie profilu zdjęcie utrwalone i widoczne po reloadzie (rozszerza FR-5 o trwałość serwerową). |
+| FR-11 | Edycja profilu z przyciskami **Zapisz** / **Anuluj**; „Anuluj" odrzuca niezapisane zmiany, w tym wybrane, niewysłane zdjęcie. | Po „Anuluj" backend i widok bez zmian; brak osieroconego pliku na serwerze. |
+| FR-12 | Walidacja email również po stronie serwera. | `PUT` z niepoprawnym email zwraca błąd i nie zapisuje (rozszerza FR-6). |
+| FR-13 | Możliwość usunięcia profilu (reset do stanu pustego). | `DELETE` czyści dane i zdjęcie → stan „pierwsze uruchomienie". |
 
 ---
 
@@ -118,13 +140,15 @@ Frontend projektujemy tak, by przyszła integracja z **Express + MongoDB** była
 interface Profile {
   firstName: string;
   lastName: string;
-  email: string;        // walidowany format e-mail (FR-6)
+  email: string;        // walidowany format e-mail (FR-6 front, FR-12 serwer)
   aboutMe: string;
-  avatarUrl: string;    // na Etapie 1: data URL / lokalny blob
+  avatarUrl: string;    // Etap 1: data URL / lokalny blob → Etap 2: ścieżka/URL pliku na backendzie
 }
 ```
 
 > Ten interfejs będzie podstawą przyszłego API i schematu w MongoDB. Zmiany kontraktu odnotowujemy w tym dokumencie.
+>
+> **Zmiana kontraktu (Etap 2):** semantyka `avatarUrl` zmienia się z base64 data URL (Etap 1) na **ścieżkę/URL pliku serwowanego przez backend** (np. `/api/profile/avatar`); pusty string = brak zdjęcia. Kształt interfejsu bez zmian.
 
 ---
 
@@ -207,6 +231,17 @@ Etap 1 uznajemy za zakończony, gdy:
 | 8 | Liczba środowisk | **Trzy:** dev / staging / production. |
 | 9 | Cel wdrożenia frontendu | **Kontener Docker** (serwowany np. przez nginx) — środowiska prod-like, CD do własnej infry. |
 | 10 | Strategia gałęzi | **GitHub Flow** — krótkie gałęzie + PR do `main`. |
+
+#### Decyzje — Etap 2 (Backend)
+
+| # | Temat | Decyzja |
+|---|-------|---------|
+| 11 | Backend | **Express + TypeScript**, monorepo `backend/` obok `frontend/` (samodzielny, własny lockfile; bez npm workspaces). |
+| 12 | Trwałość (Etap 2) | **Plik JSON na dysku** (`backend/data/profile.json`) — bez DB; MongoDB dopiero Etap 3. |
+| 13 | Zdjęcie profilowe | **Osobny plik** na serwerze (multipart upload, limit rozmiaru, tylko obrazy); w JSON-ie ścieżka/URL. |
+| 14 | Walidacja email | Również **po stronie serwera** (`PUT /api/profile`), nie tylko na froncie. |
+| 15 | Strategia E2E | **Full-stack** — Playwright przeciw prawdziwemu backendowi; reset stanu przez realny `DELETE /api/profile`. |
+| 16 | Artefakty buildu | **Build wielu artefaktów:** osobne `frontend-dist` i `backend-dist` (lekkie: `dist` + pliki `package*`, bez `node_modules`). |
 
 ### 8.2 Pytania nadal otwarte
 
