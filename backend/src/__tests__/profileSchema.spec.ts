@@ -25,15 +25,12 @@ describe('ProfileInputSchema', () => {
   })
 
   it('odcina avatarUrl i nieznane pola (whitelist/strip)', () => {
-    const result = ProfileInputSchema.safeParse({
+    const data = ProfileInputSchema.parse({
       ...validBody,
       avatarUrl: '/x.png',
       hack: 'usun-mnie',
     })
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data).toEqual(validBody)
-    }
+    expect(data).toEqual(validBody)
   })
 
   it('odrzuca body bez wymaganego pola', () => {
