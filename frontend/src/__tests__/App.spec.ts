@@ -38,7 +38,10 @@ describe('App', () => {
       aboutMe: '',
       avatarUrl: '',
     }
-    fetchMock.mockResolvedValue(okResponse(savedProfile))
+    // First call: getProfile (auto-load on mount), second call: saveProfile (PUT)
+    fetchMock
+      .mockResolvedValueOnce(okResponse(savedProfile))
+      .mockResolvedValueOnce(okResponse(savedProfile))
     const wrapper = mount(App)
     await wrapper.get('[data-test="edit-button"]').trigger('click')
     await wrapper.get('[data-test="firstName"]').setValue('Zofia')
