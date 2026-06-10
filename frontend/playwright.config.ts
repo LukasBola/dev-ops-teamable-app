@@ -41,8 +41,10 @@ export default defineConfig({
     /* Use data-test attribute for getByTestId */
     testIdAttribute: 'data-test',
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    /* Record a trace for every test run (viewable via `npm run test:e2e:report`).
+       See https://playwright.dev/docs/trace-viewer. Switch to 'retain-on-failure'
+       to keep traces only for failing tests if the artifacts get too large. */
+    trace: 'on',
 
     /* Only on CI systems run the tests headless */
     headless: !!process.env.CI,
