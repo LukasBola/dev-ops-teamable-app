@@ -103,3 +103,65 @@ describe('DELETE /api/profile', () => {
     expect(delAgain.status).toBe(204)
   })
 })
+
+describe('POST + GET /api/profile/avatar', () => {
+  const png = Buffer.from('fake-png-bytes')
+
+  it('upload obrazu zwraca avatarUrl z cache-bustingiem (FR-10)', async () => {
+    const res = await request(app)
+      .post('/api/profile/avatar')
+      .attach('avatar', png, { filename: 'a.png', contentType: 'image/png' })
+    expect(res.status).toBe(200)
+    expect(res.body.avatarUrl).toMatch(/^\/api\/profile\/avatar\?v=\d+$/)
+
+    const profile = await request(app).get('/api/profile')
+    expect(profile.body.avatarUrl).toBe(res.body.avatarUrl)
+  })
+
+  it('GET serwuje obraz z poprawnym Content-Type po uploadzie', async () => {
+    await request(app)
+      .post('/api/profile/avatar')
+      .attach('avatar', png, { filename: 'a.png', contentType: 'image/png' })
+    const res = await request(app).get('/api/profile/avatar')
+    expect(res.status).toBe(200)
+    expect(res.headers['content-type']).toContain('image/png')
+  })
+
+  it('GET bez zdjęcia zwraca 404 { error }', async () => {
+    const res = await request(app).get('/api/profile/avatar')
+    expect(res.status).toBe(404)
+    expect(res.body).toEqual({ error: 'Brak zdjęcia' })
+  })
+
+  it('odrzuca nie-obraz z 400 { error }', async () => {
+    const res = await request(app)
+      .post('/api/profile/avatar')
+      .attach('avatar', Buffer.from('tekst'), { filename: 'a.txt', contentType: 'text/plain' })
+    expect(res.status).toBe(400)
+    expect(res.body).toEqual({ error: 'Dozwolone tylko pliki graficzne' })
+  })
+
+  it('odrzuca plik powyżej 2 MB z 413 { error }', async () => {
+    const big = Buffer.alloc(2 * 1024 * 1024 + 1)
+    const res = await request(app)
+      .post('/api/profile/avatar')
+      .attach('avatar', big, { filename: 'big.png', contentType: 'image/png' })
+    expect(res.status).toBe(413)
+    expect(res.body).toEqual({ error: 'Plik jest za duży (max 2 MB)' })
+  })
+
+  it('odrzuca żądanie bez pliku z 400', async () => {
+    const res = await request(app).post('/api/profile/avatar')
+    expect(res.status).toBe(400)
+    expect(res.body).toEqual({ error: 'Brak pliku' })
+  })
+
+  it('DELETE /api/profile usuwa też zdjęcie (FR-13)', async () => {
+    await request(app)
+      .post('/api/profile/avatar')
+      .attach('avatar', png, { filename: 'a.png', contentType: 'image/png' })
+    await request(app).delete('/api/profile')
+    const res = await request(app).get('/api/profile/avatar')
+    expect(res.status).toBe(404)
+  })
+})
