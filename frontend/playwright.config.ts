@@ -99,15 +99,18 @@ export default defineConfig({
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   // outputDir: 'test-results/',
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    /**
-     * Use the dev server by default for faster feedback loop.
-     * Use the preview server on CI for more realistic testing.
-     * Playwright will re-use the local server if there is already a dev-server running.
-     */
-    command: 'npm run build && npm run preview',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-  },
+  /* Run backend + frontend before starting the tests */
+  webServer: [
+    {
+      // Backend on fresh temp data dir (clean state).
+      command: 'npm --prefix ../backend run start:e2e',
+      url: 'http://localhost:3001/api/health',
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'npm run build && npm run preview',
+      url: 'http://localhost:4173',
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 })
