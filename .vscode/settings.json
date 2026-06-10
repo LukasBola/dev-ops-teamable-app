@@ -1,0 +1,20 @@
+{
+  // TypeScript Native Preview (tsgo) doesn't support tsserver plugins, so
+  // @vue/typescript-plugin can't load and `.vue` imports fail to resolve in
+  // .ts files (e.g. `import X from '../X.vue'` in *.spec.ts shows ts(2307)).
+  // Force the classic tsserver in this workspace so Vue's plugin runs.
+  // vue-tsc (build/CI) is unaffected and already resolves SFC imports.
+  "js/ts.experimental.useTsgo": false,
+
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "tsconfig.json": "tsconfig.*.json, env.d.ts, typed-router.d.ts",
+    "vite.config.*": "jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*",
+    "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .oxfmt*, .prettier*, prettier*, .editorconfig"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+}

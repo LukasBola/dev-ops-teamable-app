@@ -1,0 +1,19 @@
+{
+  "extends": "@tsconfig/node24/tsconfig.json",
+  "include": ["./**/*"],
+  "compilerOptions": {
+    // Playwright transpiles specs itself; bundler mode matches that and
+    // enables `import.meta.url`.
+    "module": "preserve",
+    "moduleResolution": "bundler",
+
+    // Node.js types for `node:path`/`node:url`; the base config doesn't add
+    // them automatically. DOM lib is needed because code inside
+    // `page.evaluate()` runs in the browser (e.g. `localStorage`).
+    "types": ["node"],
+    "lib": ["ESNext", "DOM"],
+
+    // Type-checking only.
+    "noEmit": true
+  }
+}
