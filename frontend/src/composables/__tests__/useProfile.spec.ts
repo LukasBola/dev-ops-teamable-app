@@ -4,9 +4,9 @@ import { getProfile, saveProfile, uploadAvatar } from '../../services/profileSer
 import type { Profile } from '../../types/profile'
 
 vi.mock('../../services/profileService', () => ({
-  getProfile: vi.fn(),
-  saveProfile: vi.fn(),
-  uploadAvatar: vi.fn(),
+  getProfile: vi.fn<() => Promise<Profile>>(),
+  saveProfile: vi.fn<(profile: Profile) => Promise<Profile>>(),
+  uploadAvatar: vi.fn<(file: File) => Promise<{ avatarUrl: string }>>(),
 }))
 
 const remote: Profile = {
