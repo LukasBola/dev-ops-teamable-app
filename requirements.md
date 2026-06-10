@@ -62,7 +62,7 @@ Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers
 | Etap | Spec (projekt techniczny) | Plan implementacji |
 |------|---------------------------|--------------------|
 | 1 — Frontend | [2026-06-04-etap1-frontend-profilu-design.md](docs/superpowers/specs/2026-06-04-etap1-frontend-profilu-design.md) | [2026-06-04-etap1-frontend-profilu.md](docs/superpowers/plans/2026-06-04-etap1-frontend-profilu.md) |
-| 2 — Backend + API | [2026-06-10-etap2-backend-design.md](docs/superpowers/specs/2026-06-10-etap2-backend-design.md) | _(do utworzenia po brainstormingu)_ |
+| 2 — Backend + API | [2026-06-10-etap2-backend-design.md](docs/superpowers/specs/2026-06-10-etap2-backend-design.md) | [2026-06-10-etap2-backend.md](docs/superpowers/plans/2026-06-10-etap2-backend.md) |
 
 ---
 
