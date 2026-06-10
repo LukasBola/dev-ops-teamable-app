@@ -11,7 +11,7 @@ export class HttpError extends Error {
 }
 
 // Central mapping of exceptions to uniform error contract { error } (spec 3.1).
- 
+
 export function errorHandler(
   err: unknown,
   _req: Request,
