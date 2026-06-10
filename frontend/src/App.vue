@@ -8,8 +8,8 @@ import type { Profile } from './types/profile'
 const { profile, save } = useProfile()
 const isEditing = ref(false)
 
-function onSave(updated: Profile) {
-  save(updated)
+async function onSave(updated: Profile) {
+  await save(updated)
   isEditing.value = false
 }
 </script>

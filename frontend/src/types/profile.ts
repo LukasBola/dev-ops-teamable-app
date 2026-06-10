@@ -6,10 +6,11 @@ export interface Profile {
   avatarUrl: string
 }
 
+// Stage 2: first start = empty profile (FR-9). Real state comes from backend.
 export const DEFAULT_PROFILE: Profile = {
-  firstName: 'Jan',
-  lastName: 'Kowalski',
-  email: 'jan.kowalski@example.com',
-  aboutMe: 'Cześć! Tu uczę się DevOps na projekcie Teamable.',
+  firstName: '',
+  lastName: '',
+  email: '',
+  aboutMe: '',
   avatarUrl: '',
 }
