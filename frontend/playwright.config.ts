@@ -103,18 +103,24 @@ export default defineConfig({
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   // outputDir: 'test-results/',
 
-  /* Run backend + frontend before starting the tests */
+  /* Run backend + frontend before starting the tests.
+     The E2E stack is fully isolated from local dev: the backend runs on a
+     DEDICATED port (3101) with a throwaway temp data dir, and preview proxies
+     /api there via PREVIEW_API_TARGET. reuseExistingServer is false so a running
+     `npm run dev` backend (:3001, real data) is never reused and never wiped by
+     the per-test DELETE resets. */
   webServer: [
     {
-      // Backend on fresh temp data dir (clean state).
+      // Backend on a fresh temp data dir AND a dedicated port (never :3001 dev).
       command: 'npm --prefix ../backend run start:e2e',
-      url: 'http://localhost:3001/api/health',
-      reuseExistingServer: !process.env.CI,
+      url: 'http://localhost:3101/api/health',
+      reuseExistingServer: false,
     },
     {
-      command: 'npm run build && npm run preview',
+      // Preview proxies /api to the isolated E2E backend, not the dev one.
+      command: 'npm run build && PREVIEW_API_TARGET=http://localhost:3101 npm run preview',
       url: 'http://localhost:4173',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
   ],
 })

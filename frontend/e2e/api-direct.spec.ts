@@ -4,11 +4,13 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 /**
- * Zestaw DIAGNOSTYCZNY — uderza wprost w backend na :3001, z pominięciem proxy.
+ * Zestaw DIAGNOSTYCZNY — uderza wprost w izolowany backend E2E (:3101),
+ * z pominięciem proxy.
  *
  * `test.use({ baseURL })` nadpisuje bazowy URL z playwright.config.ts (:4173)
  * dla całego tego pliku, więc względne ścieżki `/api/...` lecą bezpośrednio na
- * backend, a nie przez serwer preview frontendu.
+ * backend E2E, a nie przez serwer preview frontendu. Celowo NIE :3001 — tam
+ * działa lokalny dev-backend z prawdziwymi danymi.
  *
  * Po co osobny plik: gdy api.spec.ts (przez :4173 → proxy) zacznie padać, ten
  * zestaw odpowiada na pytanie „to wina backendu czy proxy?". Jeśli tu zielono,
@@ -18,7 +20,10 @@ import { fileURLToPath } from 'node:url'
  *   npx playwright test e2e/api-direct.spec.ts
  */
 
-test.use({ baseURL: 'http://localhost:3001' })
+// Hits the ISOLATED E2E backend directly (port 3101 from `start:e2e`), bypassing
+// the preview proxy. Must NOT target :3001 — that's the local dev backend with
+// real data, which the per-test DELETE resets would wipe.
+test.use({ baseURL: 'http://localhost:3101' })
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const avatarPng = readFileSync(path.join(__dirname, 'fixtures/avatar.png'))

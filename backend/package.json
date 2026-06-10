@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
-    "start:e2e": "PROFILE_DATA_DIR=$(mktemp -d) PORT=3001 tsx src/index.ts",
+    "start:e2e": "PROFILE_DATA_DIR=$(mktemp -d) PORT=3101 tsx src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit",
     "test": "vitest --run",
