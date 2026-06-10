@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { Router } from 'express'
 import multer from 'multer'
 import { ProfileInputSchema } from '../schemas/profile.js'
@@ -56,9 +57,13 @@ profileRouter.post('/avatar', upload.single('avatar'), async (req, res) => {
   res.json({ avatarUrl })
 })
 
-profileRouter.get('/avatar', async (_req, res) => {
+profileRouter.get('/avatar', async (_req, res, next) => {
   const avatarPath = await findAvatarPath()
   if (!avatarPath) throw new HttpError(404, 'Brak zdjęcia')
-  // sendFile sets Content-Type based on file extension
-  res.sendFile(avatarPath)
+  // Pass dir as `root` + bare filename so sendFile's dotfiles:'ignore' check only
+  // sees `avatar.png` — not a parent dir like `.claude/worktrees` that would 404.
+  // sendFile sets Content-Type based on file extension.
+  res.sendFile(path.basename(avatarPath), { root: path.dirname(avatarPath) }, (err) => {
+    if (err) next(err)
+  })
 })

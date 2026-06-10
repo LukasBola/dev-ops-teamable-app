@@ -127,6 +127,19 @@ describe('POST + GET /api/profile/avatar', () => {
     expect(res.headers['content-type']).toContain('image/png')
   })
 
+  // Regresja: gdy ścieżka danych zawiera segment z kropką (np. .claude/worktrees,
+  // .data), domyślne dotfiles:'ignore' w res.sendFile zwracało 404 → 500.
+  it('GET serwuje obraz, gdy katalog danych leży pod ukrytym segmentem ścieżki', async () => {
+    const hiddenDir = path.join(dataDir, '.hidden', 'data')
+    process.env.PROFILE_DATA_DIR = hiddenDir
+    await request(app)
+      .post('/api/profile/avatar')
+      .attach('avatar', png, { filename: 'a.png', contentType: 'image/png' })
+    const res = await request(app).get('/api/profile/avatar')
+    expect(res.status).toBe(200)
+    expect(res.headers['content-type']).toContain('image/png')
+  })
+
   it('GET bez zdjęcia zwraca 404 { error }', async () => {
     const res = await request(app).get('/api/profile/avatar')
     expect(res.status).toBe(404)
