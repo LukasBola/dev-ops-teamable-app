@@ -37,7 +37,7 @@ describe('ProfileInputSchema', () => {
   })
 
   it('odrzuca body bez wymaganego pola', () => {
-    const { aboutMe: _omitted, ...incomplete } = validBody
+    const incomplete = { firstName: validBody.firstName, lastName: validBody.lastName, email: validBody.email }
     const result = ProfileInputSchema.safeParse(incomplete)
     expect(result.success).toBe(false)
   })
