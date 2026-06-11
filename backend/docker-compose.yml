@@ -1,0 +1,12 @@
+# Dev: lokalna baza MongoDB dla backendu. Pełny stack (konteneryzacja
+# aplikacji) dopiero Etap 4. Uruchomienie: `docker compose up -d`.
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - '27017:27017'
+    volumes:
+      - teamable-mongo-data:/data/db
+
+volumes:
+  teamable-mongo-data:
