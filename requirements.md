@@ -64,7 +64,7 @@ Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers
 | 1 — Frontend | [2026-06-04-etap1-frontend-profilu-design.md](docs/superpowers/specs/2026-06-04-etap1-frontend-profilu-design.md) | [2026-06-04-etap1-frontend-profilu.md](docs/superpowers/plans/2026-06-04-etap1-frontend-profilu.md) |
 | 2 — Backend + API | [2026-06-10-etap2-backend-design.md](docs/superpowers/specs/2026-06-10-etap2-backend-design.md) | [2026-06-10-etap2-backend.md](docs/superpowers/plans/2026-06-10-etap2-backend.md) |
 | 3 — MongoDB | [2026-06-11-etap3-mongodb-design.md](docs/superpowers/specs/2026-06-11-etap3-mongodb-design.md) | _(w przygotowaniu)_ |
-| 4 — Docker | [2026-06-11-etap4-docker-design.md](docs/superpowers/specs/2026-06-11-etap4-docker-design.md) | _(w przygotowaniu)_ |
+| 4 — Docker | [2026-06-11-etap4-docker-design.md](docs/superpowers/specs/2026-06-11-etap4-docker-design.md) | [2026-06-11-etap4-docker.md](docs/superpowers/plans/2026-06-11-etap4-docker.md) |
 
 ---
 
