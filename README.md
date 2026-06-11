@@ -13,15 +13,31 @@ Szczegóły: `requirements.md` oraz `docs/superpowers/`.
 
 ## Uruchomienie lokalne (full-stack)
 
+Najprościej — przez `Makefile` w korzeniu repo (wymaga Dockera dla MongoDB):
+
+```bash
+make install   # zależności backend + frontend (raz)
+make dev       # Mongo + migracje + seed + backend (:3001) i frontend (:5173)
+```
+
+`make dev` ogarnia całą sekwencję jedną komendą; Ctrl+C zatrzymuje oba serwery.
+`make help` wypisuje wszystkie zadania (`up`, `down`, `migrate`, `seed`, `e2e`, `test`, `clean`).
+Przy pierwszym `make up`/`dev` tworzony jest `backend/.env` z `backend/.env.example`
+(stąd skrypty czytają `MONGODB_URI` — bez ręcznego `export`).
+
+Ręcznie, w dwóch terminalach:
+
 | Krok | Komenda |
 |------|---------|
+| MongoDB (dev) | `cd backend && docker compose up -d` |
 | Backend (dev, port 3001) | `cd backend && npm install && npm run dev` |
 | Frontend (dev, port 5173, proxy /api → 3001) | `cd frontend && npm install && npm run dev` |
 
-Zmienne środowiskowe: patrz `backend/.env.example` (`PORT`, `PROFILE_DATA_DIR`)
+Zmienne środowiskowe: patrz `backend/.env.example` (`PORT`, `PROFILE_DATA_DIR`, `MONGODB_URI`)
 i `frontend/.env.example` (`VITE_API_BASE_URL`; puste = same-origin przez proxy).
+Skrypty backendu ładują `backend/.env` automatycznie (Node `--env-file-if-exists`).
 
-Dane backendu trafiają do `backend/data/` (gitignored): `profile.json` + `uploads/`.
+Zdjęcie avatara trafia do `backend/data/uploads/` (gitignored); reszta profilu — do MongoDB.
 
 ## Testy
 

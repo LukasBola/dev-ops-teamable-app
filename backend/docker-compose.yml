@@ -7,6 +7,15 @@ services:
       - '27017:27017'
     volumes:
       - teamable-mongo-data:/data/db
+    # Healthcheck pozwala `docker compose up -d --wait` zaczekać, aż baza
+    # faktycznie przyjmuje połączenia — dzięki temu `migrate`/`seed` zaraz po
+    # starcie nie trafiają na jeszcze niegotowy mongod.
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
 volumes:
   teamable-mongo-data:
