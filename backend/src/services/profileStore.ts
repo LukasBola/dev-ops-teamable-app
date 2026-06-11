@@ -40,6 +40,7 @@ export async function writeProfile(input: ProfileInput): Promise<Profile> {
   )
     .lean<ProfileDoc | null>()
     .exec()
+  if (!doc) throw new Error('writeProfile: upsert returned null — this should never happen')
   return toProfile(doc)
 }
 
