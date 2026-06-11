@@ -17,13 +17,18 @@ Najprościej — przez `Makefile` w korzeniu repo (wymaga Dockera dla MongoDB):
 
 ```bash
 make install   # zależności backend + frontend (raz)
-make dev       # Mongo + migracje + seed + backend (:3001) i frontend (:5173)
+make dev       # Mongo + migracje + backend (:3001) i frontend (:5173)
 ```
 
 `make dev` ogarnia całą sekwencję jedną komendą; Ctrl+C zatrzymuje oba serwery.
 `make help` wypisuje wszystkie zadania (`up`, `down`, `migrate`, `seed`, `e2e`, `test`, `clean`).
 Przy pierwszym `make up`/`dev` tworzony jest `backend/.env` z `backend/.env.example`
 (stąd skrypty czytają `MONGODB_URI` — bez ręcznego `export`).
+
+**Trwałość danych:** profil żyje w wolumenie MongoDB (`teamable-mongo-data`), który
+przeżywa `make down`/`make up` — po `make dev` widzisz swoje ostatnio zapisane dane.
+`make dev` **nie** seeduje (nie nadpisuje profilu). Dane demo wstawisz świadomie
+przez `make seed`, a pełny reset bazy to `make clean` (usuwa wolumen).
 
 Ręcznie, w dwóch terminalach:
 

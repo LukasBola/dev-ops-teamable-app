@@ -34,10 +34,10 @@ clean: ## Zatrzymaj MongoDB i usuń dane (wolumen)
 migrate: up ## Zastosuj migracje bazy
 	npm --prefix backend run migrate:up
 
-seed: up ## Wstaw profil demo (idempotentnie)
+seed: up ## Wstaw profil demo (UWAGA: nadpisuje bieżący profil danymi demo)
 	npm --prefix backend run seed
 
-dev: up migrate seed ## Pełny start: Mongo + migracje + seed + backend (:3001) i frontend (:5173)
+dev: up migrate ## Start: Mongo + migracje + backend (:3001) i frontend (:5173). Dane z bazy zostają.
 	@echo ">> backend http://localhost:3001  |  frontend http://localhost:5173   (Ctrl+C zatrzymuje oba)"
 	@trap 'kill 0' INT TERM EXIT; \
 		npm --prefix backend run dev & \
