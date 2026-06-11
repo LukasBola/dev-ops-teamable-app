@@ -1,9 +1,13 @@
 import { MongoDBContainer, type StartedMongoDBContainer } from '@testcontainers/mongodb'
-import type { GlobalSetupContext } from 'vitest/node'
+import type { ProvidedContext } from 'vitest'
 
 let container: StartedMongoDBContainer
 
-export default async function setup({ provide }: GlobalSetupContext) {
+type SetupContext = {
+  provide: <T extends keyof ProvidedContext & string>(key: T, value: ProvidedContext[T]) => void
+}
+
+export default async function setup({ provide }: SetupContext) {
   container = await new MongoDBContainer('mongo:7').start()
   // Append directConnection=true so Mongoose bypasses replica-set topology
   // discovery (testcontainers/mongodb enables RS mode; the RS member advertises
