@@ -2,7 +2,7 @@ import tseslint from 'typescript-eslint'
 import skipFormatting from 'eslint-config-prettier/flat'
 
 export default tseslint.config(
-  { ignores: ['dist/**', 'coverage/**', '**/*.cjs', 'scripts/**'] },
+  { ignores: ['dist/**', 'coverage/**', '**/*.cjs'] },
   ...tseslint.configs.recommended,
   skipFormatting,
   {
