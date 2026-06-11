@@ -30,7 +30,28 @@ Dane backendu trafiają do `backend/data/` (gitignored): `profile.json` + `uploa
 | Backend unit + integracyjne | `cd backend && npm test` |
 | Backend coverage | `cd backend && npm run test:coverage` |
 | Frontend unit | `cd frontend && npm run test:unit` |
-| Full-stack E2E (Playwright startuje oba serwery) | `cd frontend && npm run test:e2e` |
+| Full-stack E2E (Playwright startuje oba serwery) | `cd backend && npm run test:e2e` |
+
+## Backend — MongoDB (Etap 3)
+
+Backend przechowuje profil w MongoDB (zdjęcie nadal jako plik na dysku).
+
+### Lokalna baza (dev)
+```bash
+cd backend
+docker compose up -d                 # MongoDB na localhost:27017 (nazwany wolumen)
+export MONGODB_URI=mongodb://localhost:27017
+npm run migrate:up                   # zastosuj migracje (import legacy profile.json, jeśli jest)
+npm run seed                         # (opcjonalnie) profil demo
+npm run dev                          # backend na :3001
+```
+
+### Testy
+- `npm test` w `backend/` wymaga **działającego Dockera** — testy integracyjne podnoszą realny MongoDB przez Testcontainers.
+- `npm run test:e2e` w `backend/` uruchamia pełny full-stack E2E: kontener Mongo + `migrate:up` + Playwright (frontend + backend).
+
+### Migracje
+- `npm run migrate:up` / `migrate:down` / `migrate:status` (wymaga `MONGODB_URI`).
 
 ## Artefakty CI
 

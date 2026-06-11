@@ -63,7 +63,7 @@ Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers
 |------|---------------------------|--------------------|
 | 1 — Frontend | [2026-06-04-etap1-frontend-profilu-design.md](docs/superpowers/specs/2026-06-04-etap1-frontend-profilu-design.md) | [2026-06-04-etap1-frontend-profilu.md](docs/superpowers/plans/2026-06-04-etap1-frontend-profilu.md) |
 | 2 — Backend + API | [2026-06-10-etap2-backend-design.md](docs/superpowers/specs/2026-06-10-etap2-backend-design.md) | [2026-06-10-etap2-backend.md](docs/superpowers/plans/2026-06-10-etap2-backend.md) |
-| 3 — MongoDB | [2026-06-11-etap3-mongodb-design.md](docs/superpowers/specs/2026-06-11-etap3-mongodb-design.md) | _(w przygotowaniu)_ |
+| 3 — MongoDB | [2026-06-11-etap3-mongodb-design.md](docs/superpowers/specs/2026-06-11-etap3-mongodb-design.md) | [2026-06-11-etap3-mongodb.md](docs/superpowers/plans/2026-06-11-etap3-mongodb.md) |
 
 ---
 
@@ -101,6 +101,8 @@ Szczegóły projektowe: [spec Etapu 2](docs/superpowers/specs/2026-06-10-etap2-b
 | FR-11 | Edycja profilu z przyciskami **Zapisz** / **Anuluj**; „Anuluj" odrzuca niezapisane zmiany, w tym wybrane, niewysłane zdjęcie. | Po „Anuluj" backend i widok bez zmian; brak osieroconego pliku na serwerze. |
 | FR-12 | Walidacja email również po stronie serwera. | `PUT` z niepoprawnym email zwraca błąd i nie zapisuje (rozszerza FR-6). |
 | FR-13 | Możliwość usunięcia profilu (reset do stanu pustego). | `DELETE` czyści dane i zdjęcie → stan „pierwsze uruchomienie". |
+
+> **Etap 3:** mechanizm trwałości z FR-8 (plik JSON) zostaje zastąpiony przez **MongoDB**; kryteria akceptacji FR-8…FR-13 pozostają w mocy (zmienia się tylko backend trwałości). Szczegóły: [spec Etapu 3](docs/superpowers/specs/2026-06-11-etap3-mongodb-design.md).
 
 ---
 
@@ -150,6 +152,8 @@ interface Profile {
 > Ten interfejs będzie podstawą przyszłego API i schematu w MongoDB. Zmiany kontraktu odnotowujemy w tym dokumencie.
 >
 > **Zmiana kontraktu (Etap 2):** semantyka `avatarUrl` zmienia się z base64 data URL (Etap 1) na **ścieżkę/URL pliku serwowanego przez backend** (np. `/api/profile/avatar`); pusty string = brak zdjęcia. Kształt interfejsu bez zmian.
+>
+> **Trwałość (Etap 3):** źródłem prawdy profilu jest teraz **dokument MongoDB** (kolekcja `profiles`, singleton `_id:'profile'`). Kształt `Profile` i semantyka `avatarUrl` bez zmian; zdjęcie nadal plikiem na dysku, w dokumencie trzymany jest tylko `avatarUrl`. Mechanizm trwałości FR-8 (plik JSON) zostaje **zastąpiony przez MongoDB** — analogicznie do tego, jak FR-8 zastąpił `localStorage` z FR-7.
 
 ---
 
