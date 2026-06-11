@@ -112,14 +112,9 @@ export default defineConfig({
   webServer: [
     {
       // Backend on a fresh temp data dir AND a dedicated port (never :3001 dev).
-      // start:e2e is self-sufficient: with no MONGODB_URI (IDE "play" / direct
-      // playwright run) it brings up dev Mongo + an isolated teamable_e2e DB; the
-      // orchestrator (make e2e) injects MONGODB_URI for a throwaway testcontainer.
-      // Longer timeout covers first-time `docker compose up --wait` + migrate.
       command: 'npm --prefix ../backend run start:e2e',
       url: 'http://localhost:3101/api/health',
       reuseExistingServer: false,
-      timeout: 120_000,
     },
     {
       // Preview proxies /api to the isolated E2E backend, not the dev one.

@@ -18,7 +18,7 @@ async function run() {
   config.set({
     mongodb: {
       url: MONGODB_URI,
-      databaseName: process.env.MONGODB_DB_NAME || 'teamable',
+      databaseName: 'teamable',
       options: {},
     },
     migrationsDir: path.resolve(__dirname, '..', 'migrations'),

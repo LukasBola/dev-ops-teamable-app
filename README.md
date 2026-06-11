@@ -69,8 +69,7 @@ npm run dev                          # backend na :3001
 
 ### Testy
 - `npm test` w `backend/` wymaga **działającego Dockera** — testy integracyjne podnoszą realny MongoDB przez Testcontainers.
-- `npm run test:e2e` w `backend/` (lub `make e2e`) uruchamia pełny full-stack E2E: kontener Mongo + `migrate:up` + Playwright (frontend + backend).
-- **Pojedynczy test / „play" w IDE:** możesz odpalić Playwrighta wprost (np. jeden test z poziomu edytora) — backend E2E (`start:e2e`) jest samowystarczalny: gdy `MONGODB_URI` nie jest ustawione, sam podnosi dev Mongo i używa **osobnej bazy `teamable_e2e`**, więc Twoje dane dev (baza `teamable`) pozostają nietknięte. Wymaga działającego Dockera.
+- `npm run test:e2e` w `backend/` uruchamia pełny full-stack E2E: kontener Mongo + `migrate:up` + Playwright (frontend + backend).
 
 ### Migracje
 - `npm run migrate:up` / `migrate:down` / `migrate:status` (wymaga `MONGODB_URI`).
