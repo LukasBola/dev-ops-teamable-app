@@ -23,12 +23,14 @@ afterEach(async () => {
 
 describe('migration: import-legacy-profile', () => {
   it('up jest no-op, gdy brak legacy profile.json (bezpieczne na świeżej bazie/CI)', async () => {
-    await migration.up(mongoose.connection.db)
-    const doc = await mongoose.connection.db.collection('profiles').findOne({ _id: PROFILE_ID })
+    const db = mongoose.connection.db!
+    await migration.up(db)
+    const doc = await db.collection<{ _id: string }>('profiles').findOne({ _id: PROFILE_ID })
     expect(doc).toBeNull()
   })
 
   it('up importuje legacy profile.json, jest idempotentne; down usuwa', async () => {
+    const db = mongoose.connection.db!
     const legacy = {
       firstName: 'Stary',
       lastName: 'Profil',
@@ -38,17 +40,17 @@ describe('migration: import-legacy-profile', () => {
     }
     await fs.writeFile(path.join(legacyDir, 'profile.json'), JSON.stringify(legacy), 'utf8')
 
-    await migration.up(mongoose.connection.db)
-    await migration.up(mongoose.connection.db) // idempotent — no duplicate
-    const docs = await mongoose.connection.db
-      .collection('profiles')
+    await migration.up(db)
+    await migration.up(db) // idempotent — no duplicate
+    const docs = await db
+      .collection<{ _id: string }>('profiles')
       .find({ _id: PROFILE_ID })
       .toArray()
     expect(docs).toHaveLength(1)
     expect(docs[0]).toMatchObject(legacy)
 
-    await migration.down(mongoose.connection.db)
-    const after = await mongoose.connection.db.collection('profiles').findOne({ _id: PROFILE_ID })
+    await migration.down(db)
+    const after = await db.collection<{ _id: string }>('profiles').findOne({ _id: PROFILE_ID })
     expect(after).toBeNull()
   })
 })
