@@ -22,7 +22,12 @@ module.exports = {
       return // no legacy file — nothing to import (fresh/CI)
     }
 
-    const data = JSON.parse(raw)
+    let data
+    try {
+      data = JSON.parse(raw)
+    } catch (parseErr) {
+      throw new Error(`Failed to parse legacy profile.json at ${legacyPath()}: ${parseErr.message}`)
+    }
     await db.collection('profiles').insertOne({
       _id: PROFILE_ID,
       firstName: data.firstName ?? '',

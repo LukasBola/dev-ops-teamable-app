@@ -2,6 +2,8 @@
 // the ESM app. Usage: node scripts/migrate.cjs <up|down|status>
 // migrate-mongo v14 is ESM-only; use dynamic import() to load it from CJS.
 
+const path = require('node:path')
+
 const MONGODB_URI = process.env.MONGODB_URI
 if (!MONGODB_URI) {
   console.error('MONGODB_URI is not set')
@@ -19,7 +21,7 @@ async function run() {
       databaseName: 'teamable',
       options: {},
     },
-    migrationsDir: 'migrations',
+    migrationsDir: path.resolve(__dirname, '..', 'migrations'),
     changelogCollectionName: 'changelog',
     lockCollectionName: 'changelog_lock',
     lockTtl: 0,
