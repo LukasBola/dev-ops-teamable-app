@@ -10,6 +10,10 @@ async function main() {
   })
 
   const shutdown = () => {
+    // Force-exit fallback: if connections don't drain (e.g. keep-alive clients
+    // hold the socket open), don't hang forever. unref() so this timer alone
+    // never keeps the process alive.
+    setTimeout(() => process.exit(1), 10_000).unref()
     server.close(() => {
       void disconnectDb().finally(() => process.exit(0))
     })

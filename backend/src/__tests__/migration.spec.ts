@@ -21,6 +21,10 @@ afterEach(async () => {
   await fs.rm(legacyDir, { recursive: true, force: true })
 })
 
+// Isolation note: the `profiles` collection is reset before each test by the
+// shared setup (`mongo-test-setup.ts` → ProfileModel.deleteMany({})). These tests
+// write to the same collection via the raw driver and rely on that shared reset —
+// they intentionally do not clean `profiles` themselves.
 describe('migration: import-legacy-profile', () => {
   it('up jest no-op, gdy brak legacy profile.json (bezpieczne na świeżej bazie/CI)', async () => {
     const db = mongoose.connection.db!
