@@ -25,8 +25,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Single worker everywhere: all specs share ONE backend instance (one
+     profile.json), so parallel files would race on the same mutable state.
+     Suite is small and fast, so serializing costs nothing. */
+  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -39,8 +41,10 @@ export default defineConfig({
     /* Use data-test attribute for getByTestId */
     testIdAttribute: 'data-test',
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    /* Record a trace for every test run (viewable via `npm run test:e2e:report`).
+       See https://playwright.dev/docs/trace-viewer. Switch to 'retain-on-failure'
+       to keep traces only for failing tests if the artifacts get too large. */
+    trace: 'on',
 
     /* Only on CI systems run the tests headless */
     headless: !!process.env.CI,
@@ -99,15 +103,24 @@ export default defineConfig({
   /* Folder for test artifacts such as screenshots, videos, traces, etc. */
   // outputDir: 'test-results/',
 
-  /* Run your local dev server before starting the tests */
-  webServer: {
-    /**
-     * Use the dev server by default for faster feedback loop.
-     * Use the preview server on CI for more realistic testing.
-     * Playwright will re-use the local server if there is already a dev-server running.
-     */
-    command: 'npm run build && npm run preview',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-  },
+  /* Run backend + frontend before starting the tests.
+     The E2E stack is fully isolated from local dev: the backend runs on a
+     DEDICATED port (3101) with a throwaway temp data dir, and preview proxies
+     /api there via PREVIEW_API_TARGET. reuseExistingServer is false so a running
+     `npm run dev` backend (:3001, real data) is never reused and never wiped by
+     the per-test DELETE resets. */
+  webServer: [
+    {
+      // Backend on a fresh temp data dir AND a dedicated port (never :3001 dev).
+      command: 'npm --prefix ../backend run start:e2e',
+      url: 'http://localhost:3101/api/health',
+      reuseExistingServer: false,
+    },
+    {
+      // Preview proxies /api to the isolated E2E backend, not the dev one.
+      command: 'npm run build && PREVIEW_API_TARGET=http://localhost:3101 npm run preview',
+      url: 'http://localhost:4173',
+      reuseExistingServer: false,
+    },
+  ],
 })

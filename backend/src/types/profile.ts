@@ -6,8 +6,7 @@ export interface Profile {
   avatarUrl: string
 }
 
-// Stage 2: first start = empty profile (FR-9). Real state comes from backend.
-export const DEFAULT_PROFILE: Profile = {
+export const EMPTY_PROFILE: Profile = {
   firstName: '',
   lastName: '',
   email: '',

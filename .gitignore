@@ -4,6 +4,7 @@ node_modules/
 # build output
 dist/
 frontend/dist/
+backend/data/
 
 # test artifacts
 coverage/
@@ -17,3 +18,4 @@ test-results/
 
 # editor / OS
 .DS_Store
+.eslintcache

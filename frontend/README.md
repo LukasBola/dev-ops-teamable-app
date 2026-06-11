@@ -66,6 +66,38 @@ npm run test:e2e -- tests/example.spec.ts
 npm run test:e2e -- --debug
 ```
 
+#### Opening the HTML report and traces
+
+After a local run:
+
+```sh
+npm run test:e2e:report
+```
+
+To open a report **downloaded from CI** (GitHub Actions artifact):
+
+```sh
+# 1. Unzip the downloaded artifact first — it must contain index.html
+# 2. Point show-report at the unzipped folder (NOT the .zip)
+npx playwright show-report "/path/to/playwright-report"
+```
+
+This starts a local server (usually <http://localhost:9323>) and opens the report.
+Click a test → in the **Traces** section click the trace thumbnail to open the
+Trace Viewer (timeline, DOM snapshots, network).
+
+> Always open via `show-report` — do **not** double-click `index.html`. Opening it
+> over `file://` blocks trace loading (CORS).
+
+To open a single `trace.zip` directly:
+
+```sh
+npx playwright show-trace "/path/to/trace.zip"
+```
+
+Or drag the `trace.zip` onto <https://trace.playwright.dev> (runs fully in-browser,
+nothing is uploaded).
+
 ### Lint with [ESLint](https://eslint.org/)
 
 ```sh

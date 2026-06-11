@@ -12,6 +12,13 @@
     ],
     "frontend/**/*.{json,css,md}": [
       "prettier --write"
+    ],
+    "backend/**/*.ts": [
+      "prettier --write",
+      "eslint --fix --config backend/eslint.config.js"
+    ],
+    "backend/**/*.json": [
+      "prettier --write"
     ]
   },
   "devDependencies": {

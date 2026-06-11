@@ -1,33 +1,44 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import type { Profile } from '../types/profile'
 import { isValidEmail } from '../utils/validation'
 
-const props = defineProps<{ profile: Profile }>()
-const emit = defineEmits<{ save: [profile: Profile]; cancel: [] }>()
+const props = defineProps<{ profile: Profile; serverError?: string }>()
+const emit = defineEmits<{
+  save: [payload: { profile: Profile; avatarFile: File | null }]
+  cancel: []
+}>()
 
 const form = reactive<Profile>({ ...props.profile })
 const emailError = ref('')
+const avatarFile = ref<File | null>(null)
+const previewUrl = ref('')
+
+// Local preview (object URL) takes priority; without a file choice we show the saved avatar.
+const displayedAvatar = computed(() => previewUrl.value || form.avatarUrl)
 
 function onAvatarChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
-  const reader = new FileReader()
-  reader.onload = () => {
-    form.avatarUrl = reader.result as string
-  }
-  reader.readAsDataURL(file)
+  avatarFile.value = file
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+  previewUrl.value = URL.createObjectURL(file)
 }
 
 function onSave() {
-  if (!isValidEmail(form.email)) {
+  // Empty email allowed (FR-9); validate only non-empty (FR-6).
+  if (form.email !== '' && !isValidEmail(form.email)) {
     emailError.value = 'Podaj poprawny adres email.'
     return
   }
   emailError.value = ''
-  emit('save', { ...form })
+  emit('save', { profile: { ...form }, avatarFile: avatarFile.value })
 }
+
+onBeforeUnmount(() => {
+  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+})
 </script>
 
 <template>
@@ -35,8 +46,8 @@ function onSave() {
     <form class="flex flex-col gap-4" novalidate @submit.prevent="onSave">
       <div class="flex flex-col items-center gap-3">
         <img
-          v-if="form.avatarUrl"
-          :src="form.avatarUrl"
+          v-if="displayedAvatar"
+          :src="displayedAvatar"
           alt="Podgląd zdjęcia"
           class="h-24 w-24 rounded-full object-cover"
         />
@@ -92,6 +103,10 @@ function onSave() {
           class="rounded-lg border border-gray-300 px-3 py-2"
         ></textarea>
       </label>
+
+      <p v-if="serverError" data-test="server-error" class="text-sm text-red-600">
+        {{ serverError }}
+      </p>
 
       <div class="mt-2 flex justify-end gap-3">
         <button
