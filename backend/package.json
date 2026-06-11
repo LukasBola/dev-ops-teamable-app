@@ -14,7 +14,10 @@
     "test:integration": "vitest --run src/__tests__/api.spec.ts",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --fix --cache",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "migrate:up": "node scripts/migrate.cjs up",
+    "migrate:down": "node scripts/migrate.cjs down",
+    "migrate:status": "node scripts/migrate.cjs status"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

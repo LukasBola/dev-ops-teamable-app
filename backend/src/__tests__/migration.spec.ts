@@ -1,0 +1,54 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { createRequire } from 'node:module'
+import { promises as fs } from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import mongoose from 'mongoose'
+
+const require = createRequire(import.meta.url)
+const migration = require('../../migrations/20260611120000-import-legacy-profile.cjs')
+
+const PROFILE_ID = 'profile'
+let legacyDir: string
+
+beforeEach(async () => {
+  legacyDir = await fs.mkdtemp(path.join(os.tmpdir(), 'teamable-legacy-'))
+  process.env.LEGACY_PROFILE_DIR = legacyDir
+})
+
+afterEach(async () => {
+  delete process.env.LEGACY_PROFILE_DIR
+  await fs.rm(legacyDir, { recursive: true, force: true })
+})
+
+describe('migration: import-legacy-profile', () => {
+  it('up jest no-op, gdy brak legacy profile.json (bezpieczne na świeżej bazie/CI)', async () => {
+    await migration.up(mongoose.connection.db)
+    const doc = await mongoose.connection.db.collection('profiles').findOne({ _id: PROFILE_ID })
+    expect(doc).toBeNull()
+  })
+
+  it('up importuje legacy profile.json, jest idempotentne; down usuwa', async () => {
+    const legacy = {
+      firstName: 'Stary',
+      lastName: 'Profil',
+      email: 'stary@example.com',
+      aboutMe: 'z pliku',
+      avatarUrl: '/api/profile/avatar?v=1',
+    }
+    await fs.writeFile(path.join(legacyDir, 'profile.json'), JSON.stringify(legacy), 'utf8')
+
+    await migration.up(mongoose.connection.db)
+    await migration.up(mongoose.connection.db) // idempotent — no duplicate
+    const docs = await mongoose.connection.db
+      .collection('profiles')
+      .find({ _id: PROFILE_ID })
+      .toArray()
+    expect(docs).toHaveLength(1)
+    expect(docs[0]).toMatchObject(legacy)
+
+    await migration.down(mongoose.connection.db)
+    const after = await mongoose.connection.db.collection('profiles').findOne({ _id: PROFILE_ID })
+    expect(after).toBeNull()
+  })
+})
