@@ -17,7 +17,8 @@
     "format": "prettier --write src/",
     "migrate:up": "node scripts/migrate.cjs up",
     "migrate:down": "node scripts/migrate.cjs down",
-    "migrate:status": "node scripts/migrate.cjs status"
+    "migrate:status": "node scripts/migrate.cjs status",
+    "seed": "tsx scripts/seed.ts"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
