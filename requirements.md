@@ -1,7 +1,7 @@
 # Teamable — Wymagania projektu
 
-> **Status dokumentu:** v0.3 (Etap 2 — backend — w przygotowaniu, żywy dokument)
-> **Ostatnia aktualizacja:** 2026-06-10
+> **Status dokumentu:** v0.4 (Etap 3 — MongoDB — spec gotowy, żywy dokument)
+> **Ostatnia aktualizacja:** 2026-06-11
 > **Charakter projektu:** projekt edukacyjny — aplikacja jest **poligonem do nauki DevOps**, nie celem samym w sobie.
 
 ---
@@ -63,6 +63,7 @@ Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers
 |------|---------------------------|--------------------|
 | 1 — Frontend | [2026-06-04-etap1-frontend-profilu-design.md](docs/superpowers/specs/2026-06-04-etap1-frontend-profilu-design.md) | [2026-06-04-etap1-frontend-profilu.md](docs/superpowers/plans/2026-06-04-etap1-frontend-profilu.md) |
 | 2 — Backend + API | [2026-06-10-etap2-backend-design.md](docs/superpowers/specs/2026-06-10-etap2-backend-design.md) | [2026-06-10-etap2-backend.md](docs/superpowers/plans/2026-06-10-etap2-backend.md) |
+| 3 — MongoDB | [2026-06-11-etap3-mongodb-design.md](docs/superpowers/specs/2026-06-11-etap3-mongodb-design.md) | _(w przygotowaniu)_ |
 
 ---
 
@@ -242,6 +243,17 @@ Etap 1 uznajemy za zakończony, gdy:
 | 14 | Walidacja email | Również **po stronie serwera** (`PUT /api/profile`), nie tylko na froncie. |
 | 15 | Strategia E2E | **Full-stack** — Playwright przeciw prawdziwemu backendowi; reset stanu przez realny `DELETE /api/profile`. |
 | 16 | Artefakty buildu | **Build wielu artefaktów:** osobne `frontend-dist` i `backend-dist` (lekkie: `dist` + pliki `package*`, bez `node_modules`). |
+
+#### Decyzje — Etap 3 (MongoDB)
+
+| # | Temat | Decyzja |
+|---|-------|---------|
+| 17 | Co trafia do Mongo | **Profil** (dokument-singleton `_id:'profile'`); **zdjęcie zostaje plikiem na dysku** (jak Etap 2). |
+| 18 | Sterownik / dostęp do bazy | **Mongoose** (ODM); walidacja email pozostaje w **Zod** na granicy HTTP — bez duplikacji w schemacie Mongoose. |
+| 19 | Migracje | **migrate-mongo**; migracja #1 = utworzenie kolekcji + idempotentny import legacy `profile.json` (z `down`). |
+| 20 | Testy z bazą | **Testcontainers** (`@testcontainers/mongodb`) — realny `mongod` w testach integracyjnych i E2E. |
+| 21 | Mongo lokalnie (dev) | **`backend/docker-compose.yml`** z jedną usługą `mongo` + nazwany wolumen; pełny stack (konteneryzacja aplikacji) dopiero Etap 4. |
+| 22 | Seedy | **Idempotentny `npm run seed`** (upsert profilu demo dla dev/staging). |
 
 ### 8.2 Pytania nadal otwarte
 
