@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "start": "node --env-file-if-exists=.env dist/index.js",
-    "start:e2e": "PROFILE_DATA_DIR=$(mktemp -d) PORT=3101 tsx src/index.ts",
+    "start:e2e": "tsx scripts/start-e2e.ts",
     "build": "tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit",
     "test": "vitest --run",
