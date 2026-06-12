@@ -11,6 +11,7 @@ import {
 } from '../services/profileStore.js'
 import { EMPTY_PROFILE } from '../types/profile.js'
 
+// Profile state is reset by shared setup (deleteMany). Here we isolate the avatar dir.
 let dataDir: string
 
 beforeEach(async () => {
@@ -30,13 +31,8 @@ const input = {
   aboutMe: 'Cześć!',
 }
 
-describe('profileStore', () => {
-  it('readProfile zwraca pusty profil, gdy plik nie istnieje (FR-9)', async () => {
-    expect(await readProfile()).toEqual(EMPTY_PROFILE)
-  })
-
-  it('readProfile zwraca pusty profil, gdy plik jest uszkodzony', async () => {
-    await fs.writeFile(path.join(dataDir, 'profile.json'), 'nie-json', 'utf8')
+describe('profileStore (MongoDB)', () => {
+  it('readProfile zwraca pusty profil, gdy brak dokumentu (FR-9)', async () => {
     expect(await readProfile()).toEqual(EMPTY_PROFILE)
   })
 
@@ -55,13 +51,6 @@ describe('profileStore', () => {
     expect(after.avatarUrl).toBe(before.avatarUrl)
   })
 
-  it('writeProfile zapisuje atomowo (brak pliku .tmp po zapisie)', async () => {
-    await writeProfile(input)
-    const files = await fs.readdir(dataDir)
-    expect(files).toContain('profile.json')
-    expect(files.some((f) => f.endsWith('.tmp'))).toBe(false)
-  })
-
   it('saveAvatar usuwa poprzedni plik o innym rozszerzeniu (FR-11, brak sierot)', async () => {
     await saveAvatar(Buffer.from('png-img'), 'png')
     await saveAvatar(Buffer.from('jpg-img'), 'jpg')
@@ -75,12 +64,12 @@ describe('profileStore', () => {
     expect(await findAvatarPath()).toBe(path.join(dataDir, 'uploads', 'avatar.png'))
   })
 
-  it('deleteProfile czyści dane i jest idempotentny (FR-13)', async () => {
+  it('deleteProfile czyści dokument + plik i jest idempotentny (FR-13)', async () => {
     await writeProfile(input)
     await saveAvatar(Buffer.from('img'), 'png')
     await deleteProfile()
     expect(await readProfile()).toEqual(EMPTY_PROFILE)
     expect(await findAvatarPath()).toBeNull()
-    await expect(deleteProfile()).resolves.toBeUndefined() // drugi raz też OK
+    await expect(deleteProfile()).resolves.toBeUndefined()
   })
 })

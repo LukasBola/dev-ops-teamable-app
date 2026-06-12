@@ -83,6 +83,8 @@ jobs:
             backend/dist
             backend/package.json
             backend/package-lock.json
+            backend/migrations
+            backend/scripts/migrate.cjs
 
   e2e:
     needs: [frontend, backend]
@@ -110,11 +112,12 @@ jobs:
         run: npx playwright install --with-deps chromium
         working-directory: frontend
 
-      # Playwright webServer starts backend (temp PROFILE_DATA_DIR) and frontend preview,
-      # waiting on /api/health and :4173 (spec 6).
+      # Orkiestrator (backend) podnosi Mongo (Testcontainers), uruchamia migrate:up,
+      # a następnie Playwrighta (frontend), który startuje backend (:3101, temp
+      # PROFILE_DATA_DIR, dziedziczone MONGODB_URI) i preview, czekając na /api/health.
       - name: E2E tests
         run: npm run test:e2e
-        working-directory: frontend
+        working-directory: backend
 
       - name: Upload Playwright report
         if: always()

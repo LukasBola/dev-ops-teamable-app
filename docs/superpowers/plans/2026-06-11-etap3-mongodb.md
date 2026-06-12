@@ -8,6 +8,8 @@
 
 **Tech Stack:** Node 20 + Express 5 + TypeScript (ESM), Mongoose 8, migrate-mongo 11 (migracje `.cjs`), @testcontainers/mongodb, Vitest + supertest, Playwright.
 
+> **Uwaga (wersje zainstalowane):** ostatecznie zainstalowano **Mongoose 9** i **migrate-mongo 14** (najnowsze majory; API zgodne dla użytych funkcji). Ponieważ migrate-mongo 14 jest ESM-only, runner `scripts/migrate.cjs` ładuje bibliotekę przez dynamiczny `await import('migrate-mongo')` zamiast `require`.
+
 **Źródło:** [spec Etapu 3](../specs/2026-06-11-etap3-mongodb-design.md). Zachowujemy FR-8…FR-13 (sekcja 4.1 requirements) — zmienia się tylko mechanizm trwałości.
 
 > **Wymóg środowiska:** od tego etapu uruchomienie testów backendu i E2E wymaga działającego Dockera (Testcontainers). Bez Dockera `npm test` w `backend/` nie wystartuje (zatrzyma się na `globalSetup`).
