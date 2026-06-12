@@ -64,6 +64,7 @@ Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers
 | 1 — Frontend | [2026-06-04-etap1-frontend-profilu-design.md](docs/superpowers/specs/2026-06-04-etap1-frontend-profilu-design.md) | [2026-06-04-etap1-frontend-profilu.md](docs/superpowers/plans/2026-06-04-etap1-frontend-profilu.md) |
 | 2 — Backend + API | [2026-06-10-etap2-backend-design.md](docs/superpowers/specs/2026-06-10-etap2-backend-design.md) | [2026-06-10-etap2-backend.md](docs/superpowers/plans/2026-06-10-etap2-backend.md) |
 | 3 — MongoDB | [2026-06-11-etap3-mongodb-design.md](docs/superpowers/specs/2026-06-11-etap3-mongodb-design.md) | [2026-06-11-etap3-mongodb.md](docs/superpowers/plans/2026-06-11-etap3-mongodb.md) |
+| 4 — Docker | [2026-06-11-etap4-docker-design.md](docs/superpowers/specs/2026-06-11-etap4-docker-design.md) | [2026-06-11-etap4-docker.md](docs/superpowers/plans/2026-06-11-etap4-docker.md) |
 
 ---
 
@@ -258,6 +259,18 @@ Etap 1 uznajemy za zakończony, gdy:
 | 20 | Testy z bazą | **Testcontainers** (`@testcontainers/mongodb`) — realny `mongod` w testach integracyjnych i E2E. |
 | 21 | Mongo lokalnie (dev) | **`backend/docker-compose.yml`** z jedną usługą `mongo` + nazwany wolumen; pełny stack (konteneryzacja aplikacji) dopiero Etap 4. |
 | 22 | Seedy | **Idempotentny `npm run seed`** (upsert profilu demo dla dev/staging). |
+
+#### Decyzje — Etap 4 (Docker)
+
+| # | Temat | Decyzja |
+|---|-------|---------|
+| 23 | Zakres `docker compose up` | **Pełny stack**: mongo + backend + frontend-nginx; jedno polecenie = kompletna aplikacja prod-like. |
+| 24 | Budowa obrazów | **Multi-stage builds** (builder → runtime) dla backend i frontend; lekkie obrazy bez devDependencies i kodu źródłowego. |
+| 25 | Serwowanie frontendu | **nginx:alpine** — pliki statyczne + `proxy_pass /api/ → backend:3000`; SPA routing przez `try_files`. |
+| 26 | Rejestr obrazów | **GHCR** (`ghcr.io/{owner}/teamable-{backend,frontend}`); push tylko na `main` po zielonych testach; tag SHA + `latest`. |
+| 27 | Non-root w kontenerze | **`USER app`** w obu Dockerfile'ach; `addgroup`/`adduser` na etapie runtime. |
+| 28 | Healthchecks | Backend: `/api/health` (Etap 3); Mongo: `mongosh ping`; `depends_on: service_healthy` — deterministyczna kolejność startu. |
+| 29 | E2E | **Bez zmian** — Testcontainers jak w Etapie 3; docker-compose to narzędzie dev; smoke testy na compose — Etap 5. |
 
 ### 8.2 Pytania nadal otwarte
 
