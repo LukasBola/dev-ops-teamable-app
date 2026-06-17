@@ -1,0 +1,40 @@
+services:
+  mongo:
+    image: mongo:7
+    volumes:
+      - teamable-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/teamable
+      PORT: "3000"
+    volumes:
+      - teamable-uploads:/app/data/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  teamable-mongo-data:
+  teamable-uploads:
