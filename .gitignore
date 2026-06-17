@@ -19,3 +19,6 @@ test-results/
 # editor / OS
 .DS_Store
 .eslintcache
+
+
+.claude
