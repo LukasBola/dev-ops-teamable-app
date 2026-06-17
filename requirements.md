@@ -1,7 +1,7 @@
 # Teamable — Wymagania projektu
 
-> **Status dokumentu:** v0.4 (Etap 3 — MongoDB — spec gotowy, żywy dokument)
-> **Ostatnia aktualizacja:** 2026-06-11
+> **Status dokumentu:** v0.5 (Etapy 5 — Wdrożenia/CD — i 6 — Obserwowalność/jakość — specy i plany gotowe, żywy dokument)
+> **Ostatnia aktualizacja:** 2026-06-17
 > **Charakter projektu:** projekt edukacyjny — aplikacja jest **poligonem do nauki DevOps**, nie celem samym w sobie.
 
 ---
@@ -65,6 +65,8 @@ Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers
 | 2 — Backend + API | [2026-06-10-etap2-backend-design.md](docs/superpowers/specs/2026-06-10-etap2-backend-design.md) | [2026-06-10-etap2-backend.md](docs/superpowers/plans/2026-06-10-etap2-backend.md) |
 | 3 — MongoDB | [2026-06-11-etap3-mongodb-design.md](docs/superpowers/specs/2026-06-11-etap3-mongodb-design.md) | [2026-06-11-etap3-mongodb.md](docs/superpowers/plans/2026-06-11-etap3-mongodb.md) |
 | 4 — Docker | [2026-06-11-etap4-docker-design.md](docs/superpowers/specs/2026-06-11-etap4-docker-design.md) | [2026-06-11-etap4-docker.md](docs/superpowers/plans/2026-06-11-etap4-docker.md) |
+| 5 — Wdrożenia (CD) | [2026-06-17-etap5-wdrozenia-design.md](docs/superpowers/specs/2026-06-17-etap5-wdrozenia-design.md) | [2026-06-17-etap5-wdrozenia.md](docs/superpowers/plans/2026-06-17-etap5-wdrozenia.md) |
+| 6 — Obserwowalność i jakość | [2026-06-17-etap6-obserwowalnosc-jakosc-design.md](docs/superpowers/specs/2026-06-17-etap6-obserwowalnosc-jakosc-design.md) | [2026-06-17-etap6-obserwowalnosc-jakosc.md](docs/superpowers/plans/2026-06-17-etap6-obserwowalnosc-jakosc.md) |
 
 ---
 
@@ -174,6 +176,8 @@ Testy są **pierwszorzędnym celem projektu**, nie dodatkiem. Stosujemy piramid�
 - Testy uruchamiane lokalnie **i** w CI tym samym poleceniem (np. `npm test`, `npm run test:e2e`).
 - Pokrycie kodu (coverage) mierzone od początku; próg (gate) wprowadzimy stopniowo, by nie blokować nauki na starcie.
 
+> **Etap 6:** wprowadzono twardy próg pokrycia (70% lines/functions/branches/statements) jako bramę CI dla frontend i backend; spadek poniżej progu czerwieni pipeline. Dochodzą też dwie analizy statyczne: **CodeQL** (bezpieczeństwo) i **SonarCloud** (utrzymywalność). Szczegóły: [spec Etapu 6](docs/superpowers/specs/2026-06-17-etap6-obserwowalnosc-jakosc-design.md).
+
 ---
 
 ## 7. Wymagania DevOps / SDLC (rdzeń projektu)
@@ -271,6 +275,30 @@ Etap 1 uznajemy za zakończony, gdy:
 | 27 | Non-root w kontenerze | **`USER app`** w obu Dockerfile'ach; `addgroup`/`adduser` na etapie runtime. |
 | 28 | Healthchecks | Backend: `/api/health` (Etap 3); Mongo: `mongosh ping`; `depends_on: service_healthy` — deterministyczna kolejność startu. |
 | 29 | E2E | **Bez zmian** — Testcontainers jak w Etapie 3; docker-compose to narzędzie dev; smoke testy na compose — Etap 5. |
+
+#### Decyzje — Etap 5 (Wdrożenia / CD)
+
+| # | Temat | Decyzja |
+|---|-------|---------|
+| 30 | Cel wdrożenia | **Ephemeral w CI**: `compose pull` → `up` → smoke → `down`; nic nie żyje poza pipeline'em. |
+| 31 | Trigger CD | `main` → dev + staging (auto, sekwencyjnie, dopiero po udanym CI przez `workflow_run`); tag `v*` → production (approval gate). |
+| 32 | Promowany artefakt | **Ten sam obraz GHCR po SHA** (build once, deploy many); deploy nigdy nie buduje. |
+| 33 | Sekrety i zmienne | **GitHub Environments** (dev/staging/production); required reviewers na production. |
+| 34 | Dane per środowisko | dev/staging: `SEED_ON_START=true` (seed demo); production: czysty start (FR-9). |
+| 35 | Flagi runtime | `LOG_LEVEL` per środowisko (konsumowane w Etapie 6); `SEED_ON_START` on/off. |
+| 36 | Izolacja środowisk | Osobne compose project (`teamable_dev`/`_staging`/`_production`), różne porty. |
+| 37 | Smoke test | `/api/health` + curl frontendu po każdym deployu; błąd czerwieni job. |
+
+#### Decyzje — Etap 6 (Obserwowalność i jakość)
+
+| # | Temat | Decyzja |
+|---|-------|---------|
+| 38 | Logowanie | **pino** — structured JSON z `requestId`; `LOG_LEVEL` z env (per środowisko). |
+| 39 | Metryki | **prom-client** — `GET /api/metrics` (default Node metrics + histogram latencji HTTP). |
+| 40 | Stack monitoringu | **Prometheus + Grafana** jako usługi w compose (provisioning datasource + dashboard). |
+| 41 | Coverage gate | **Vitest** próg 70% (frontend + backend); spadek łamie CI; raport lcov. |
+| 42 | Analiza statyczna #1 | **CodeQL** (GitHub native) — bezpieczeństwo, wynik w zakładce Security. |
+| 43 | Analiza statyczna #2 | **SonarCloud** — utrzymywalność, code smells, quality gate; konsumuje lcov. |
 
 ### 8.2 Pytania nadal otwarte
 
