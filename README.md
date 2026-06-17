@@ -74,6 +74,40 @@ npm run dev                          # backend na :3001
 ### Migracje
 - `npm run migrate:up` / `migrate:down` / `migrate:status` (wymaga `MONGODB_URI`).
 
+## Docker (Etap 4)
+
+The whole app runs as a prod-like stack with one command (Docker Desktop must be running):
+
+```bash
+docker compose up --build      # mongo + backend + frontend (nginx)
+```
+
+- Open the app at http://localhost:8080 — nginx serves the SPA and reverse-proxies `/api/` to the backend.
+- Only the frontend exposes a host port (`8080`); backend (`3000`) and Mongo (`27017`) are reachable only inside the compose network.
+- Avatar files persist in the `teamable-uploads` volume; Mongo data in `teamable-mongo-data`. Both survive `docker compose down`.
+- The backend container runs DB migrations on startup (`docker-entrypoint.sh`) before the server listens.
+
+Stop and remove containers (keep data):
+
+```bash
+docker compose down
+```
+
+Wipe everything including volumes:
+
+```bash
+docker compose down -v
+```
+
+Dev without containerizing the app (hot reload, Mongo only):
+
+```bash
+docker compose -f backend/docker-compose.yml up -d   # just Mongo
+# then run frontend/backend with npm run dev as usual
+```
+
+Images are published to GHCR from CI on `main`: `ghcr.io/<owner>/teamable-backend` and `ghcr.io/<owner>/teamable-frontend`, tagged with the commit SHA and `latest`.
+
 ## Artefakty CI
 
 Pipeline buduje i publikuje dwa niezależne artefakty: `frontend-dist` (statyczny build Vite)
