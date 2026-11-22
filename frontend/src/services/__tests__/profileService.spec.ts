@@ -74,4 +74,10 @@ describe('profileService', () => {
       message: 'Backend jest nieosiągalny',
     })
   })
+
+  it('401 → ApiError ze statusem 401 i komunikatem z body (sesja wygasła)', async () => {
+    fetchMock.mockResolvedValue(okResponse({ error: 'Wymagane logowanie' }, 401))
+    await expect(getProfile()).rejects.toMatchObject({ status: 401, message: 'Wymagane logowanie' })
+    await expect(getProfile()).rejects.toBeInstanceOf(ApiError)
+  })
 })

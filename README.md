@@ -38,8 +38,8 @@ Ręcznie, w dwóch terminalach:
 | Backend (dev, port 3001) | `cd backend && npm install && npm run dev` |
 | Frontend (dev, port 5173, proxy /api → 3001) | `cd frontend && npm install && npm run dev` |
 
-Zmienne środowiskowe: patrz `backend/.env.example` (`PORT`, `PROFILE_DATA_DIR`, `MONGODB_URI`)
-i `frontend/.env.example` (`VITE_API_BASE_URL`; puste = same-origin przez proxy).
+Zmienne środowiskowe: patrz `backend/.env.example` (`PORT`, `PROFILE_DATA_DIR`, `MONGODB_URI`,
+`BETTER_AUTH_*`). Frontend nie ma zmiennych: API jest na tym samym originie (proxy Vite / nginx).
 Skrypty backendu ładują `backend/.env` automatycznie (Node `--env-file-if-exists`).
 
 Zdjęcie avatara trafia do `backend/data/uploads/` (gitignored); reszta profilu — do MongoDB.

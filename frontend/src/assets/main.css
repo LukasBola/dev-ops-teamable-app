@@ -1,1 +1,74 @@
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource/atkinson-hyperlegible/400.css';
+@import '@fontsource/atkinson-hyperlegible/700.css';
 @import 'tailwindcss';
+
+/* Projekt „Identyfikator” (docs/design/teamable-identyfikator.html).
+   Kolory jako zmienne CSS, żeby tryb ciemny zmieniał tylko wartości, a nie klasy w komponentach. */
+:root {
+  --wall: #e4e8f1; /* tło: ściana biura */
+  --badge: #ffffff; /* identyfikator */
+  --ink: #18204a; /* granatowy nadruk */
+  --ink-soft: #5a6386;
+  --lanyard: #ffc53d; /* smycz: jedyny akcent */
+  --lanyard-ink: #3b2a00;
+  --line: #d3d9e8;
+  --field: #f3f5fa;
+  --error: #b3261e;
+  --error-bg: #fdecea;
+  --focus: #2d4fd6;
+  --shadow: rgb(24 32 74 / 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --wall: #121831;
+    --badge: #1d2443;
+    --ink: #e8ecf8;
+    --ink-soft: #a3abcb;
+    --lanyard: #ffcc4d;
+    --lanyard-ink: #2e2100;
+    --line: #333c63;
+    --field: #262e52;
+    --error: #ff9b8f;
+    --error-bg: #3a1d24;
+    --focus: #9db0ff;
+    --shadow: rgb(0 0 0 / 0.45);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-wall: var(--wall);
+  --color-badge: var(--badge);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-lanyard: var(--lanyard);
+  --color-lanyard-ink: var(--lanyard-ink);
+  --color-line: var(--line);
+  --color-field: var(--field);
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
+  --color-focus: var(--focus);
+}
+
+@theme {
+  --font-display: 'Bricolage Grotesque Variable', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-sans: 'Atkinson Hyperlegible', Verdana, 'Segoe UI', sans-serif;
+}
+
+@layer base {
+  html {
+    touch-action: manipulation;
+  }
+  body {
+    background: var(--wall);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.55;
+  }
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+}

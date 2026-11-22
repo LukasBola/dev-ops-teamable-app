@@ -1,7 +1,5 @@
 import type { Profile } from '../types/profile'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
-
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -16,7 +14,7 @@ export class ApiError extends Error {
 async function request(path: string, init?: RequestInit): Promise<Response> {
   let response: Response
   try {
-    response = await fetch(`${API_BASE}${path}`, init)
+    response = await fetch(path, init)
   } catch {
     throw new ApiError(0, 'Backend jest nieosiągalny')
   }

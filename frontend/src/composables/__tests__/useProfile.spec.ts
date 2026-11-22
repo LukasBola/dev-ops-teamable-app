@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useProfile } from '../useProfile'
-import { getProfile, saveProfile, uploadAvatar } from '../../services/profileService'
-import type { Profile } from '../../types/profile'
+import { ApiError, getProfile, saveProfile, uploadAvatar } from '../../services/profileService'
+import { DEFAULT_PROFILE, type Profile } from '../../types/profile'
 
-vi.mock('../../services/profileService', () => ({
+vi.mock('../../services/profileService', async (importOriginal) => ({
+  ApiError: (await importOriginal<typeof import('../../services/profileService')>()).ApiError,
   getProfile: vi.fn<() => Promise<Profile>>(),
   saveProfile: vi.fn<(profile: Profile) => Promise<Profile>>(),
   uploadAvatar: vi.fn<(file: File) => Promise<{ avatarUrl: string }>>(),
@@ -17,11 +18,6 @@ const remote: Profile = {
   avatarUrl: '',
 }
 
-async function flush() {
-  await Promise.resolve()
-  await Promise.resolve()
-}
-
 beforeEach(() => {
   vi.mocked(getProfile).mockReset()
   vi.mocked(saveProfile).mockReset()
@@ -31,9 +27,9 @@ beforeEach(() => {
 describe('useProfile', () => {
   it('ładuje profil z serwisu i kończy loading', async () => {
     vi.mocked(getProfile).mockResolvedValue(remote)
-    const { profile, loading, error } = useProfile()
+    const { profile, loading, error, load } = useProfile()
     expect(loading.value).toBe(true)
-    await flush()
+    await load()
     expect(loading.value).toBe(false)
     expect(error.value).toBe('')
     expect(profile.value).toEqual(remote)
@@ -41,8 +37,8 @@ describe('useProfile', () => {
 
   it('ustawia error, gdy load się nie powiedzie', async () => {
     vi.mocked(getProfile).mockRejectedValue(new Error('Backend jest nieosiągalny'))
-    const { loading, error } = useProfile()
-    await flush()
+    const { loading, error, load } = useProfile()
+    await load()
     expect(loading.value).toBe(false)
     expect(error.value).toBe('Backend jest nieosiągalny')
   })
@@ -52,8 +48,8 @@ describe('useProfile', () => {
     const updated = { ...remote, firstName: 'Ola' }
     vi.mocked(saveProfile).mockResolvedValue(updated)
 
-    const { profile, save } = useProfile()
-    await flush()
+    const { profile, save, load } = useProfile()
+    await load()
     await save(updated, null)
 
     expect(uploadAvatar).not.toHaveBeenCalled()
@@ -67,8 +63,8 @@ describe('useProfile', () => {
     const saved = { ...remote, avatarUrl: '/api/profile/avatar?v=42' }
     vi.mocked(saveProfile).mockResolvedValue(saved)
 
-    const { profile, save } = useProfile()
-    await flush()
+    const { profile, save, load } = useProfile()
+    await load()
     const file = new File(['img'], 'a.png', { type: 'image/png' })
     await save({ ...remote }, file)
 
@@ -81,11 +77,46 @@ describe('useProfile', () => {
     vi.mocked(getProfile).mockResolvedValue(remote)
     vi.mocked(uploadAvatar).mockRejectedValue(new Error('Plik jest za duży (max 2 MB)'))
 
-    const { save } = useProfile()
-    await flush()
+    const { save, load } = useProfile()
+    await load()
     const file = new File(['img'], 'big.png', { type: 'image/png' })
 
     await expect(save({ ...remote }, file)).rejects.toThrow('Plik jest za duży (max 2 MB)')
     expect(saveProfile).not.toHaveBeenCalled()
+  })
+
+  it('nie ładuje profilu sam z siebie - dopiero po zalogowaniu (FR-15)', () => {
+    useProfile()
+    expect(getProfile).not.toHaveBeenCalled()
+  })
+
+  it('clear() resetuje profil, błąd i wraca do stanu ładowania', async () => {
+    vi.mocked(getProfile).mockResolvedValue(remote)
+    const { profile, loading, error, load, clear } = useProfile()
+    await load()
+    clear()
+    expect(profile.value).toEqual(DEFAULT_PROFILE)
+    expect(loading.value).toBe(true)
+    expect(error.value).toBe('')
+  })
+
+  it('odpowiedź poprzedniego ładowania po clear() jest ignorowana (zmiana użytkownika)', async () => {
+    let resolveA!: (p: Profile) => void
+    vi.mocked(getProfile).mockReturnValueOnce(new Promise((r) => (resolveA = r)))
+    const { profile, load, clear } = useProfile()
+    const pendingA = load()
+    clear()
+    resolveA(remote)
+    await pendingA
+    expect(profile.value).toEqual(DEFAULT_PROFILE)
+  })
+
+  it('401 przy ładowaniu woła onUnauthorized i nie pokazuje błędu', async () => {
+    vi.mocked(getProfile).mockRejectedValue(new ApiError(401, 'Wymagane logowanie'))
+    const onUnauthorized = vi.fn<() => void>()
+    const { error, load } = useProfile({ onUnauthorized })
+    await load()
+    expect(onUnauthorized).toHaveBeenCalledTimes(1)
+    expect(error.value).toBe('')
   })
 })
