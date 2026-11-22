@@ -21,6 +21,7 @@ test-results/
 .eslintcache
 
 
-.claude
+.claude/*
+!.claude/memory/
 # Sesje Playwright (E2E) — tokeny z przebiegu testów
 frontend/e2e/.auth/
