@@ -208,6 +208,28 @@ docker compose -f backend/docker-compose.yml up -d   # just Mongo
 
 Images are published to GHCR from CI on `main`: `ghcr.io/<owner>/teamable-backend` and `ghcr.io/<owner>/teamable-frontend`, tagged with the commit SHA and `latest`.
 
+## Graf wiedzy (Graphify)
+
+Repo ma graf kodu i dokumentacji w `graphify-out/graph.json` (commitowany). Decyzja: [ADR-0011](docs/adr/0011-graf-wiedzy-graphify.md).
+
+Na nowym komputerze / klonie:
+
+```bash
+brew install uv
+uv tool install graphifyy   # CLI `graphify` (pakiet ma dwa „y”)
+graphify install            # skill /graphify dla Claude Code (user scope)
+make graphify-setup         # merge driver dla graph.json (raz na klon)
+```
+
+- Graf aktualizuje się sam w `pre-commit` (tylko kod, bez LLM) i trafia do tego samego commita.
+- Po zmianach w dokumentach (`docs/`, `requirements.md`, README): `/graphify --update` w Claude Code.
+- Pominięcie aktualizacji: `GRAPHIFY_SKIP_HOOK=1 git commit ...`.
+- Konflikt na grafie (np. bez `make graphify-setup`): `git checkout --theirs graphify-out/graph.json && graphify update . && git add graphify-out/graph.json`. Zachowuje część z dokumentów; `rm graph.json` zbudowałby graf tylko z kodu.
+- Przy rozjechanym grafie mergujemy lokalnie: przycisk merge i „Update branch” na GitHubie nie używają merge drivera.
+- Graf powstaje z drzewa roboczego: przed commitem nie trzymaj nieśledzonych plików w `backend/` i `frontend/` (hook ostrzega).
+- Agent musi odpytać graf (`graphify query "..."`) przed pierwszym odczytem pliku w sesji (`GRAPHIFY_HOOK_STRICT=1` w `.claude/settings.json`).
+- Podgląd: `open graphify-out/graph.html` (lokalny, niecommitowany).
+
 ## Artefakty CI
 
 Pipeline buduje i publikuje dwa niezależne artefakty: `frontend-dist` (statyczny build Vite)

@@ -12,4 +12,4 @@ Don't create git worktrees automatically when starting a new task in teamable (e
 
 **Why:** the user wants to work on regular branches. Worktrees under `.claude/worktrees/` came from the superpowers skill, not from any project rule.
 
-**How to apply:** at the start of feature, plan or fix work, create a normal branch. Use a worktree only if the user asks for one explicitly.
+**How to apply:** at the start of feature, plan or fix work, create a normal branch. Use a worktree only if the user asks for one explicitly. This also covers superpowers executing-plans/SDD: don't create the `.superpowers/sdd/` workspace or ledger (2026-11-22, user stopped it); track progress with todos and git log.

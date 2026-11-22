@@ -1,0 +1,5 @@
+# Lokalne ustawienia i pamięć agenta — nie są wiedzą o projekcie
+.claude/
+# Obrazy (zrzuty makiet, fixture, logo) — każdy wymaga osobnej ekstrakcji wizyjnej, a nie wnoszą wiedzy o kodzie
+*.png
+*.svg

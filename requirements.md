@@ -336,6 +336,12 @@ Od tego etapu pełna treść decyzji (kontekst, opcje, konsekwencje, dowody) jes
 | 53 | E2E auth | Projekt `setup` + `storageState`, sekrety generowane na przebieg, kontrprzykłady jako dowód testów negatywnych. | [0009](docs/adr/0009-e2e-auth-storagestate-sekrety-per-przebieg.md) |
 | 54 | Przekazanie projektu | Paczka dla projektanta: tokeny W3C (DTCG), makieta HTML, zrzuty — zamiast natywnego `.fig`. | [0010](docs/adr/0010-przekazanie-projektu-ui-tokeny-dtcg.md) |
 
+#### Decyzje — narzędzia (Graphify)
+
+| # | Temat | Decyzja | ADR |
+|---|-------|---------|-----|
+| 55 | Graf wiedzy | Graphify: commitowany `graphify-out/graph.json` z merge driverem, aktualizacja w husky pre-commit, strict guard dla agenta. | [0011](docs/adr/0011-graf-wiedzy-graphify.md) |
+
 ### 8.2 Pytania nadal otwarte
 
 - **Etap 6:** czy `GET /api/metrics` ma być publiczny, czy za uwierzytelnianiem / tylko w sieci wewnętrznej (po Etapie 4.5 reszta API wymaga sesji) — decyzja w specu Etapu 6.
