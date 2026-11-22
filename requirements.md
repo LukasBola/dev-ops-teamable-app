@@ -176,7 +176,7 @@ Testy są **pierwszorzędnym celem projektu**, nie dodatkiem. Stosujemy piramid�
 - Testy uruchamiane lokalnie **i** w CI tym samym poleceniem (np. `npm test`, `npm run test:e2e`).
 - Pokrycie kodu (coverage) mierzone od początku; próg (gate) wprowadzimy stopniowo, by nie blokować nauki na starcie.
 
-> **Etap 6:** wprowadzono twardy próg pokrycia (70% lines/functions/branches/statements) jako bramę CI dla frontend i backend; spadek poniżej progu czerwieni pipeline. Dochodzą też dwie analizy statyczne: **CodeQL** (bezpieczeństwo) i **SonarCloud** (utrzymywalność). Szczegóły: [spec Etapu 6](docs/superpowers/specs/2026-06-17-etap6-obserwowalnosc-jakosc-design.md).
+> **Etap 6 (plan):** wprowadzimy twardy próg pokrycia (70% lines/functions/branches/statements) jako bramę CI dla frontend i backend; spadek poniżej progu będzie czerwienić pipeline. Dojdą też dwie analizy statyczne: **CodeQL** (bezpieczeństwo) i **SonarCloud** (utrzymywalność). Szczegóły: [spec Etapu 6](docs/superpowers/specs/2026-06-17-etap6-obserwowalnosc-jakosc-design.md).
 
 ---
 
