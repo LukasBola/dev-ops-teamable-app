@@ -1,3 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Teamable Identyfikator</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,7 +56,7 @@ button, input, textarea { font: inherit; color: inherit; }
   display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between;
 }
 .studio p { margin: 0; color: var(--ink-soft); font-size: 0.9rem; max-width: 46ch; }
-.states { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px; border-radius: 999px; background: var(--badge); border: 1px solid var(--line); }
+.states { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px; border-radius: 22px; background: var(--badge); border: 1px solid var(--line); }
 .states button {
   border: 0; background: transparent; padding: 8px 14px; border-radius: 999px; cursor: pointer; min-height: 40px;
   font-size: 0.9rem; color: var(--ink-soft);
@@ -91,6 +93,7 @@ button, input, textarea { font: inherit; color: inherit; }
 }
 .lanyard::before { left: 18px; transform: skewX(14deg); transform-origin: bottom; }
 .lanyard::after { right: 18px; transform: skewX(-14deg); transform-origin: bottom; }
+@media (max-width: 639px) { .lanyard { top: -12px; height: 100px; } }
 
 .badge-wrap { perspective: 1400px; margin-top: 70px; width: min(400px, 100%); position: relative; z-index: 2; }
 .badge {
@@ -109,6 +112,19 @@ button, input, textarea { font: inherit; color: inherit; }
   border: 1px solid var(--line); position: relative;
 }
 .face.back { position: absolute; inset: 0; transform: rotateY(180deg); overflow: hidden; }
+/* Po obrocie wysokość wyznacza tył (formularz edycji jest dłuższy od logowania). */
+.badge.is-flipped .face.front { position: absolute; inset: 0; }
+.badge.is-flipped .face.back { position: relative; inset: auto; }
+.edit h2 { margin: 0 0 18px; font: 800 1.85rem/1.05 var(--font-display); letter-spacing: -0.025em; }
+.edit form { gap: 16px; }
+.photo-row { display: flex; align-items: center; gap: 16px; }
+.photo-row .ph { width: 80px; height: 80px; flex: none; border-radius: 50%; background: var(--field); display: grid; place-items: center; color: var(--ink-soft); }
+.photo-row label { display: grid; gap: 6px; font-weight: 700; font-size: 0.875rem; }
+.file-btn { justify-self: start; border: 1.5px solid var(--ink); border-radius: 8px; min-height: 40px; padding: 0 12px; background: transparent; font-weight: 700; cursor: pointer; }
+.field textarea { width: 100%; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--field); resize: vertical; }
+.edit-actions { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.btn-save { border: 0; cursor: pointer; min-height: 44px; padding: 0 20px; border-radius: 12px; font-weight: 700; background: var(--ink); color: var(--badge); }
+.mail-link { color: var(--ink-soft); text-underline-offset: 4px; }
 /* Clip + punched slot: the one physical detail of a real badge */
 .slot {
   position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
@@ -158,11 +174,11 @@ form { display: grid; gap: 16px; }
 
 /* Profile face: the filled badge */
 .band { margin: -44px -32px 0; height: 104px; background: var(--lanyard); position: relative; }
-.band span { position: absolute; left: 32px; bottom: 12px; color: var(--lanyard-ink); font: 700 0.9rem/1 var(--font-display); }
+.band span { position: absolute; left: 32px; top: 16px; color: var(--lanyard-ink); font: 700 0.875rem/1 var(--font-display); }
 .photo {
   width: 104px; height: 104px; border-radius: 50%; margin: -52px auto 0; position: relative;
-  border: 5px solid var(--badge); background: #c9d3ee; overflow: hidden; display: grid; place-items: center;
-  font: 800 2.2rem/1 var(--font-display); color: #18204a;
+  border: 5px solid var(--badge); background: var(--field); overflow: hidden; display: grid; place-items: center;
+  font: 800 2.25rem/1.11 var(--font-display); color: var(--ink);
 }
 .person { text-align: center; margin-top: 14px; }
 .person h2 { margin: 0; font: 800 2.35rem/1.02 var(--font-display); letter-spacing: -0.03em; text-wrap: balance; }
@@ -194,7 +210,7 @@ form { display: grid; gap: 16px; }
 .typo .d { font: 800 2.2rem/1 var(--font-display); letter-spacing: -0.03em; margin: 0; }
 .typo .b { margin: 8px 0 0; }
 
-@media (max-width: 560px) {
+@media (max-width: 639px) {
   .topbar { padding: 14px 16px; }
   .account span { display: none; }
   .face { padding: 40px 22px 26px; }
@@ -216,6 +232,7 @@ form { display: grid; gap: 16px; }
     <button type="button" data-state="error" aria-pressed="false">Błąd</button>
     <button type="button" data-state="loading" aria-pressed="false">Wysyłanie</button>
     <button type="button" data-state="profile" aria-pressed="false">Profil</button>
+    <button type="button" data-state="edit" aria-pressed="false">Edycja</button>
   </div>
 </div>
 
@@ -246,7 +263,7 @@ form { display: grid; gap: 16px; }
           <form id="login" novalidate>
             <div class="alert" id="login-error" role="alert" hidden>
               <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 5.5v5.5M10 13.6v.9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
-              <div><strong>Niepoprawny e-mail lub hasło</strong>Sprawdź oba pola i spróbuj ponownie.</div>
+              <div><strong>Niepoprawny e-mail lub hasło</strong></div>
             </div>
             <div class="field">
               <label for="email">E-mail</label>
@@ -266,19 +283,37 @@ form { display: grid; gap: 16px; }
 
         <!-- Back: filled badge = profile -->
         <section class="face back" id="back" aria-labelledby="person-name" aria-hidden="true">
-          <div class="band"><span>Członek zespołu</span></div>
-          <div class="photo" aria-hidden="true">AN</div>
-          <div class="person">
-            <h2 id="person-name">Anna Nowak</h2>
-            <p class="mail">anna@teamable.dev</p>
+          <div id="view">
+            <div class="band"><span>Członek zespołu</span></div>
+            <div class="photo" aria-hidden="true">AN</div>
+            <div class="person">
+              <h2 id="person-name">Anna Nowak</h2>
+              <p class="mail"><a class="mail-link" href="#" onclick="return false">anna@teamable.dev</a></p>
+            </div>
+            <div class="about">
+              <h3>O mnie</h3>
+              <p>Front-end i dostępność. Pytaj mnie o formularze, kontrast i to, czemu fokus musi być widoczny.</p>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn-secondary" id="edit-open">Edytuj profil</button>
+            </div>
           </div>
-          <div class="about">
-            <h3>O mnie</h3>
-            <p>Front-end i dostępność. Pytaj mnie o formularze, kontrast i to, czemu fokus musi być widoczny.</p>
-          </div>
-          <div class="actions">
-            <button type="button" class="btn-secondary">Edytuj profil</button>
-            <button type="button" class="btn-quiet">Resetuj profil</button>
+          <div id="edit" class="edit" hidden>
+            <h2>Edycja profilu</h2>
+            <form id="edit-form" class="grid">
+              <div class="photo-row">
+                <div class="ph" aria-hidden="true"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="4"/><path d="M4.5 20c1.4-3.6 4.2-5.5 7.5-5.5s6.1 1.9 7.5 5.5" stroke-linecap="round"/></svg></div>
+                <label>Zdjęcie<button type="button" class="file-btn">Wybierz plik</button></label>
+              </div>
+              <div class="field"><label for="first">Imię</label><div class="control"><input id="first" value="Anna"></div></div>
+              <div class="field"><label for="last">Nazwisko</label><div class="control"><input id="last" value="Nowak"></div></div>
+              <div class="field"><label for="contact">E-mail kontaktowy</label><div class="control"><input id="contact" type="email" value="anna@teamable.dev"></div></div>
+              <div class="field"><label for="about">O mnie</label><textarea id="about" rows="3">Front-end i dostępność. Pytaj mnie o formularze, kontrast i to, czemu fokus musi być widoczny.</textarea></div>
+              <div class="edit-actions">
+                <button type="button" class="btn-quiet" id="edit-cancel">Anuluj</button>
+                <button type="submit" class="btn-save">Zapisz</button>
+              </div>
+            </form>
           </div>
         </section>
       </div>
@@ -294,6 +329,7 @@ form { display: grid; gap: 16px; }
       <li>Logowanie to pusty identyfikator. Po zalogowaniu ten sam przedmiot obraca się i pokazuje Twój profil. To jedyna animacja: obrót przy zalogowaniu i lekkie wychylenie przy wejściu.</li>
       <li>Wylogowanie obraca identyfikator z powrotem i czyści dane z widoku, zanim pojawi się formularz.</li>
       <li>Przy włączonym „ogranicz ruch” stany zmieniają się bez animacji.</li>
+      <li>Makieta odpowiada aplikacji po Etapie 4.5 (zsynchronizowana 2026-11-22). Kolory i fonty jako zmienne: <code>docs/design/tokens.json</code>.</li>
     </ul>
   </section>
   <section>
@@ -353,12 +389,17 @@ form { display: grid; gap: 16px; }
     back.inert = !on
     account.hidden = !on
   }
+  function showEdit(on) {
+    $('view').hidden = on
+    $('edit').hidden = !on
+  }
   function go(state) {
     setPressed(state)
     status.textContent = ''
     setLoading(state === 'loading')
     showError(state === 'error')
-    showProfile(state === 'profile')
+    showProfile(state === 'profile' || state === 'edit')
+    showEdit(state === 'edit')
     if (state === 'error') password.value = ''
   }
 
@@ -395,11 +436,20 @@ form { display: grid; gap: 16px; }
     }, 900)
   })
 
+  $('edit-open').addEventListener('click', () => go('edit'))
+  $('edit-cancel').addEventListener('click', () => go('profile'))
+  $('edit-form').addEventListener('submit', (e) => {
+    e.preventDefault()
+    $('person-name').textContent = `${$('first').value} ${$('last').value}`.trim() || 'Nowy członek zespołu'
+    go('profile')
+  })
+
   $('person-name').tabIndex = -1
   $('logout').addEventListener('click', () => {
     showProfile(false)
     setPressed('login')
-    status.textContent = 'Wylogowano. Do zobaczenia.'
+    showEdit(false)
+    status.textContent = 'Wylogowano.'
     $('login-title').tabIndex = -1
     $('login-title').focus({ preventScroll: true })
   })
