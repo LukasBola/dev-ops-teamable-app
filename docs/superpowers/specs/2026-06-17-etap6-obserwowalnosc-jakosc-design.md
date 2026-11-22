@@ -28,6 +28,17 @@ Cały ciężar edukacyjny jest po stronie DevOps, zgodnie z wierszem Etapu 6 w `
 | 43 | Analiza statyczna #2 | **SonarCloud** | Bogatsze metryki jakości (code smells, duplikacja, quality gate) obok bezpieczeństwa z CodeQL |
 | 49 | Analiza dynamiczna (DAST) | **OWASP ZAP baseline** w CI przeciw stackowi compose *(dodane 2026-11-22; numer po decyzjach #44–48 Etapu 4.5)* | CodeQL/SonarCloud czytają kod; ZAP atakuje działającą aplikację (nagłówki, ciasteczka, wycieki informacji) — inna klasa problemów, typowy element pipeline'u DevSecOps |
 
+## 0. Wymagania z Etapu 4.5 (uwierzytelnianie)
+
+> Dopisane 2026-11-22 po wdrożeniu Etapu 4.5 ([ADR-0001](../../adr/0001-better-auth.md)…[ADR-0009](../../adr/0009-e2e-auth-storagestate-sekrety-per-przebieg.md)). Po nim każdy endpoint `/api` poza `/api/health` i `/api/auth/*` wymaga sesji.
+
+- **Otwarta decyzja — `GET /api/metrics`:** publiczny (jak `/api/health`, wygodny dla Prometheusa w compose) czy dostępny tylko w sieci wewnętrznej / za uwierzytelnianiem. Metryki z etykietą ścieżki zdradzają strukturę API i natężenie ruchu [wniosek]. Do rozstrzygnięcia przy implementacji, z ADR-em; kierunek do rozważenia: endpoint montowany przed `requireAuth`, ale niewystawiony przez nginx (Prometheus scrapuje backend po sieci compose).
+- **pino — redakcja danych wrażliwych:** `redact` dla nagłówków `cookie`, `authorization`, `set-cookie` i pól `password` / `newPassword` w body. Logi żądań `/api/auth/*` nie mogą zawierać haseł ani tokenów sesji; test jednostkowy na redakcję.
+- **Audit log logowań:** udane i nieudane logowania, wylogowania, zmiany hasła i usunięcia kont (CLI) jako zdarzenia pino z `userId`/e-mailem, przez `databaseHooks` Better Auth (sesje) i wprost w CLI. Bez haseł.
+- **Metryki auth:** licznik nieudanych logowań i odpowiedzi 429 (limit prób) — sygnał ataku na hasła w Grafanie.
+- **Coverage gate:** progi 70% obejmują nowy kod auth (`backend/src/auth`, `middleware/requireAuth.ts`, `originCheck.ts`, `cli/`); CLI testowane bez procesu potomnego (`runUserCli`).
+- **OWASP ZAP (#49):** skan baseline bez logowania widzi tylko ekran logowania i publiczne endpointy. Do decyzji: czy skanować też jako zalogowany użytkownik (kontekst ZAP z sesją konta demo), czy zostać przy baseline.
+
 ## 1. Architektura i struktura repo
 
 Zmiana dotyka backendu (instrumentacja), compose (monitoring) i CI (bramy jakości). Frontend i kontrakt API bez zmian.

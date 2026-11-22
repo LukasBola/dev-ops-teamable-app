@@ -1,7 +1,9 @@
 # ADR-0004: Walidacja zmiennych środowiskowych przez Zod przy starcie backendu
 
-- **Status:** Proponowany
-- **Data decyzji:** 2026-11-22 (źródło: spec Etapu 4.5)
+- **Status:** Zaakceptowany
+- **Retrospektywny:** nie
+- **Data decyzji:** 2026-11-22 (źródło: spec Etapu 4.5); wdrożenie 2026-11-22 (`4418854`)
+- **Data spisania:** 2026-11-22
 - **Zastępuje / Zastąpiony przez:** —
 
 ## Kontekst
@@ -26,7 +28,8 @@ Jeden schemat Zod w `backend/src/env.ts` waliduje `process.env` przy starcie; pr
 
 **Negatywne / koszty**
 
-- Testy muszą ustawiać kompletne env (setup Vitest, orkiestrator E2E).
+- Testy muszą ustawiać kompletne env (setup Vitest, orkiestrator E2E). `env()` jest memoizowane, więc `MONGODB_URI` z Testcontainers trzeba wpisać do `process.env` przed pierwszym wywołaniem (`f600d3d`).
+- Starszy lokalny `backend/.env` bez sekretu zatrzymuje `make dev`; `make env` generuje sekret tylko dla nowych plików (`c42bb52`).
 
 **Niewiadome**
 
@@ -37,3 +40,6 @@ Jeden schemat Zod w `backend/src/env.ts` waliduje `process.env` przy starcie; pr
 - `backend/src/index.ts`, `backend/src/db/connection.ts`, `backend/src/services/profileStore.ts` – rozproszony odczyt `process.env`
 - `backend/package.json` – `zod` już w zależnościach
 - helpdesk `docs/adr/0009-walidacja-env-zod.md` – wzorzec
+- `4418854` – `backend/src/env.ts`, `env.spec.ts`, wymagany `BETTER_AUTH_SECRET` w compose
+- `f600d3d` – `mongo-test-setup.ts`: `process.env.MONGODB_URI = inject('MONGODB_URI')`
+- `c42bb52` – `make env` z wygenerowanym sekretem; README

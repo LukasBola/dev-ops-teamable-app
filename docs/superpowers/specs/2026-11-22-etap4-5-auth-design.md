@@ -1,9 +1,9 @@
 # Etap 4.5 — Uwierzytelnianie (Better Auth) i profile per użytkownik — projekt techniczny
 
-> **Status:** projekt do akceptacji
+> **Status:** wdrożony 2026-11-22 (plan: [2026-11-22-etap4-5-auth.md](../plans/2026-11-22-etap4-5-auth.md)); odstępstwa od tego projektu opisują plan i ADR-0006…0010
 > **Data:** 2026-11-22
 > **Wzorzec referencyjny:** projekt `codewithmosh/helpdesk` — spec `2026-07-28-better-auth-migration-design.md` (rewizja 2 + poprawki po review PR #8) oraz ADR-0006…0009.
-> **ADR-y:** [0001](../../adr/0001-better-auth.md), [0002](../../adr/0002-jeden-origin-spa-api.md), [0003](../../adr/0003-ochrona-csrf-origin.md), [0004](../../adr/0004-walidacja-env-zod.md), [0005](../../adr/0005-profil-per-uzytkownik.md)
+> **ADR-y:** [0001](../../adr/0001-better-auth.md), [0002](../../adr/0002-jeden-origin-spa-api.md), [0003](../../adr/0003-ochrona-csrf-origin.md), [0004](../../adr/0004-walidacja-env-zod.md), [0005](../../adr/0005-profil-per-uzytkownik.md); decyzje z wdrożenia: [0006](../../adr/0006-indeksy-auth-w-migracji.md) (indeksy w migracji), [0007](../../adr/0007-jeden-sterownik-mongodb.md) (jeden sterownik `mongodb`), [0008](../../adr/0008-ui-identyfikator-tokeny-fonty.md) (UI „Identyfikator”), [0009](../../adr/0009-e2e-auth-storagestate-sekrety-per-przebieg.md) (E2E auth), [0010](../../adr/0010-przekazanie-projektu-ui-tokeny-dtcg.md) (przekazanie projektu UI)
 
 ---
 

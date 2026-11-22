@@ -1,7 +1,9 @@
 # ADR-0003: Ochrona CSRF przez sprawdzanie nagłówka `Origin` dla wszystkich mutacji `/api`
 
-- **Status:** Proponowany
-- **Data decyzji:** 2026-11-22 (źródło: spec Etapu 4.5)
+- **Status:** Zaakceptowany
+- **Retrospektywny:** nie
+- **Data decyzji:** 2026-11-22 (źródło: spec Etapu 4.5); wdrożenie 2026-11-22 (`0c80e85`)
+- **Data spisania:** 2026-11-22
 - **Zastępuje / Zastąpiony przez:** —
 
 ## Kontekst
@@ -35,3 +37,5 @@ Middleware `originCheck` na `/api`, montowany po handlerze Better Auth: dla meto
 
 - `docs/superpowers/specs/2026-11-22-etap4-5-auth-design.md` – sekcja 6.4
 - helpdesk `docs/adr/0008-ochrona-csrf-origin.md` – wzorzec i pochodzenie luki
+- `0c80e85` – `backend/src/middleware/originCheck.ts`, kolejność w `app.ts`; testy jednostkowe `middleware.spec.ts`
+- `610b1f5` – E2E: AAPI-N5 (403 z sesją i obcym `Origin`), SEC-2 (formularz z obcej strony); kontrprzykład: wyłączony `originCheck` → czerwony tylko AAPI-N5, SEC-2 zostaje zielony dzięki `SameSite=Lax` (obrona w głąb)

@@ -1,7 +1,9 @@
 # ADR-0002: SPA i API pod jednym originem, bez CORS
 
-- **Status:** Proponowany
-- **Data decyzji:** 2026-11-22 (źródło: spec Etapu 4.5)
+- **Status:** Zaakceptowany
+- **Retrospektywny:** nie
+- **Data decyzji:** 2026-11-22 (źródło: spec Etapu 4.5); wdrożenie 2026-11-22 (`f600d3d`, `03d3cac`)
+- **Data spisania:** 2026-11-22
 - **Zastępuje / Zastąpiony przez:** —
 
 ## Kontekst
@@ -39,3 +41,7 @@ Przeglądarka rozmawia z API wyłącznie przez origin frontendu. Usuwamy `cors()
 - `frontend/vite.config.ts` – proxy `/api` w `server` i `preview`
 - `frontend/nginx.conf` – `location /api/ { proxy_pass … }`
 - helpdesk `docs/adr/0007-jeden-origin-spa-api.md` – wzorzec
+- `f600d3d` – usunięte `cors` i `@types/cors`
+- `03d3cac` – `frontend/src/services/authClient.ts` bez `baseURL`; usunięte `VITE_API_BASE_URL` i `frontend/.env.example`
+- `610b1f5` – SEC-3: obca strona nie odczyta `/api/profile` przez `fetch` z ciasteczkami
+- `c42bb52` – rozstrzygnięcie niewiadomej (proxy Vite) — opis wyniku w docs/superpowers/plans/2026-11-22-etap4-5-auth.md, Task 8
