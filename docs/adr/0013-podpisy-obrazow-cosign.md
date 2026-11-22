@@ -34,9 +34,12 @@ Job `docker` w `ci.yml` podpisuje każdy obraz wypchnięty z `main` po digeście
 
 **Niewiadome**
 
-- Flagi i format podpisów w aktualnym cosign (v3) oraz zapis dwóch podpisów na jednym digeście — do potwierdzenia w dokumentacji przy pisaniu planu (Context7 nie zwrócił dokumentacji 2026-11-22).
+- Czy GHCR przyjmuje podpisy cosign v3 zapisywane domyślnie jako artefakty OCI 1.1 (referrers) — do potwierdzenia w pierwszym przebiegu; awaryjnie `--registry-referrers-mode legacy`.
+- Rozstrzygnięte 2026-11-22: flagi (`sign --yes`, `--key env://…` + `COSIGN_PASSWORD`, `verify --key`, `--certificate-identity`, `--certificate-oidc-issuer`) i dwa podpisy na jednym digeście — dokumentacja cosign v3.1.4 i przykład cosign-installer v4.1.3.
 
 ## Dowody
 
 - `.github/workflows/ci.yml` – job `docker` buduje i wypycha obrazy tylko z `main` (`docker/build-push-action`, output `digest`).
 - [Spec Etapu 5](../superpowers/specs/2026-06-17-etap5-wdrozenia-design.md) – sekcje 4 i 5 (sekrety `COSIGN_*`, weryfikacja w `deploy.yml`).
+- `sigstore/cosign` @ v3.1.4: `doc/cosign_sign.md`, `doc/cosign_verify.md`, `CHANGELOG.md` (v3.0.0: nowy format bundle i podpisy jako artefakty OCI 1.1 domyślnie).
+- `sigstore/cosign-installer` @ v4.1.3: README – przykład „Sign image with a key” i „Sign the images with GitHub OIDC Token” na tym samym digeście.

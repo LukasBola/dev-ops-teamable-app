@@ -285,7 +285,7 @@ jobs:
 - **Tag na commicie spoza `main`** nie ma obrazu `:<sha>` → re-tag w jobie `docker` pada → produkcja się nie wdraża.
 - Na PR i gałęziach innych niż `main` joby `deploy-*` są pomijane (`if`), a branch policy dev/staging i tak by je odrzuciła.
 - Uprawnienia: wywołujący `deploy-*` daje `contents: read, packages: read`; `docker` potrzebuje `packages: write` i `id-token: write`; `check-staging` — `deployments: read`; `release` — `contents: write`. Odpowiedź na niewiadomą ADR-0012: `packages: read` wystarcza do pobrania obrazu w wywoływanym workflow.
-- Szczegóły flag cosign (w tym format podpisów cosign v3 i zapis dwóch podpisów na jednym digeście) — do potwierdzenia w dokumentacji przy pisaniu planu (Context7 nie zwrócił dokumentacji 2026-11-22).
+- Flagi cosign potwierdzone 2026-11-22 w dokumentacji v3.1.4 (`sigstore/cosign`: `doc/cosign_sign.md`, `doc/cosign_verify.md`) i w README `sigstore/cosign-installer` v4.1.3, którego oficjalny przykład podpisuje ten sam digest kluczem i keyless. cosign v3 domyślnie zapisuje podpisy jako artefakty OCI 1.1 (referrers); zachowanie GHCR do potwierdzenia w pierwszym przebiegu (awaryjnie `--registry-referrers-mode legacy`).
 
 ## 6. Smoke test
 
