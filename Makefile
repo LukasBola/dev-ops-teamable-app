@@ -43,7 +43,8 @@ seed: migrate ## Konto demo z DEMO_USER_EMAIL/DEMO_USER_PASSWORD (backend/.env);
 	npm --prefix backend run seed
 
 user: migrate ## Konta: make user ARGS="create|delete|set-password --email a@x.pl [--password ...]"
-	npm --prefix backend run user -- $(ARGS)
+	@# $(value …): bez tego make rozwija "$" w haśle (np. '…$%' traciło znaki).
+	npm --prefix backend run user -- $(value ARGS)
 
 dev: up migrate ## Start: Mongo + migracje + backend (:3001) i frontend (:5173). Dane z bazy zostają.
 	@echo ">> backend http://localhost:3001  |  frontend http://localhost:5173   (Ctrl+C zatrzymuje oba)"
