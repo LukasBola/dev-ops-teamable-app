@@ -102,6 +102,63 @@ Komendy: `create` (hasło 8–128 znaków), `set-password` (unieważnia wszystki
 użytkownika), `delete` (usuwa konto, sesje, profil i avatar). Kod wyjścia: `0` OK,
 `1` błąd operacji, `2` złe użycie.
 
+### Moje konto krok po kroku (dev)
+
+Spacja na początku linii sprawia, że zsh (z `HIST_IGNORE_SPACE`, domyślnie w Oh My Zsh)
+nie zapisze komendy w historii. Hasło bierz w pojedyncze cudzysłowy — wtedy znaki takie jak
+`$`, `%` czy `!` przechodzą bez zmian.
+
+Pierwsze uruchomienie po aktualizacji kodu (np. po scaleniu etapu):
+
+```bash
+git switch main && git pull
+make install        # nowe zależności (np. better-auth)
+make env            # tworzy brakujące backend/.env i .env z sekretem; istniejących nie rusza
+```
+
+Starszy `backend/.env` bez `BETTER_AUTH_SECRET` i `BETTER_AUTH_URL` trzeba uzupełnić ręcznie
+(patrz „Zmienne” niżej) — inaczej backend nie wystartuje.
+
+Założenie konta (pierwsze konto przejmuje profil sprzed wprowadzenia kont):
+
+```bash
+ make user ARGS="create --email ty@example.com --password 'twoje-haslo'"
+```
+
+Oczekiwany wynik: `Utworzono konto ty@example.com` (i ewentualnie `Przejęto istniejący profil`).
+Potem `make dev` i logowanie na http://localhost:5173.
+
+Reset albo zmiana hasła — także gdy zapomnisz obecnego (stare hasło nie jest potrzebne;
+resetu przez e-mail w aplikacji nie ma, więc robi się go tą komendą):
+
+```bash
+ make user ARGS="set-password --email ty@example.com --password 'nowe-haslo'"
+```
+
+Oczekiwany wynik: `Zmieniono hasło ty@example.com; wszystkie sesje unieważnione.` — otwarte
+karty z aplikacją wrócą do ekranu logowania, logujesz się nowym hasłem. Jeśli trzymasz hasło
+w `backend/.env` (`MOJE_KONTO_HASLO`, patrz niżej), zaktualizuj też tę linię.
+
+Usunięcie konta (razem z profilem, zdjęciem i sesjami — nieodwracalne):
+
+```bash
+ make user ARGS="delete --email ty@example.com"
+```
+
+Gdzie jest hasło: w MongoDB (kolekcja `account`) leży tylko jego skrót, z którego nie da się
+odtworzyć hasła. Zapomnianego hasła nie da się więc odczytać — ustawia się nowe przez
+`set-password`. Jeśli chcesz mieć notatkę na dysku, zapisz dane w `backend/.env` (plik jest
+w `.gitignore`) pod nazwami, których aplikacja nie czyta, np.:
+
+```bash
+MOJE_KONTO_EMAIL=ty@example.com
+MOJE_KONTO_HASLO='twoje-haslo'
+```
+
+Nie używaj do tego `DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD`: `make seed` ustawiłby wtedy temu
+kontu hasło z pliku i nadpisał profil danymi demo. Bezpieczniejszym miejscem na hasło jest
+menedżer haseł.
+
 Zmienne (`backend/.env` w dev, `.env` dla compose):
 
 - `BETTER_AUTH_SECRET` — wymagany, min. 32 znaki, **nigdy w repo** (`openssl rand -base64 32`).
