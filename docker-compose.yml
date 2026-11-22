@@ -15,6 +15,8 @@ services:
     environment:
       MONGODB_URI: mongodb://mongo:27017/teamable
       PORT: "3000"
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?ustaw BETTER_AUTH_SECRET w .env (openssl rand -base64 32)}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:8080}
     volumes:
       - teamable-uploads:/app/data/uploads
     depends_on:

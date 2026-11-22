@@ -1,9 +1,9 @@
 import mongoose from 'mongoose'
+import { env } from '../env.js'
 
 const DB_NAME = 'teamable'
 
-export async function connectDb(uri: string | undefined = process.env.MONGODB_URI): Promise<void> {
-  if (!uri) throw new Error('MONGODB_URI is not set')
+export async function connectDb(uri: string = env().MONGODB_URI): Promise<void> {
   if (mongoose.connection.readyState >= 1) return
   await mongoose.connect(uri, { dbName: DB_NAME })
 }

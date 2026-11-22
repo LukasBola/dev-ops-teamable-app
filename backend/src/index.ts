@@ -1,9 +1,9 @@
 import { createApp } from './app.js'
 import { connectDb, disconnectDb } from './db/connection.js'
-
-const port = Number(process.env.PORT ?? 3001)
+import { env } from './env.js'
 
 async function main() {
+  const { PORT: port } = env()
   await connectDb()
   const server = createApp().listen(port, () => {
     console.log(`Backend listening on http://localhost:${port}`)
