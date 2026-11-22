@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { APP_ORIGIN, EMPTY_PROFILE, NO_SESSION, PASSWORD, USERS, resetProfileA } from './helpers'
 
 /**
  * Zestaw DIAGNOSTYCZNY — uderza wprost w izolowany backend E2E (:3101),
@@ -16,8 +17,7 @@ import { fileURLToPath } from 'node:url'
  * zestaw odpowiada na pytanie „to wina backendu czy proxy?". Jeśli tu zielono,
  * a tam czerwono → problem leży w proxy/konfiguracji frontendu, nie w API.
  *
- * Uruchomienie (Playwright sam wystartuje backend przez webServer):
- *   npx playwright test e2e/api-direct.spec.ts
+ * Sesja A ze storageState działa i tutaj: ciasteczka nie zależą od portu (ten sam host localhost).
  */
 
 // Hits the ISOLATED E2E backend directly (port 3101 from `start:e2e`), bypassing
@@ -28,14 +28,6 @@ test.use({ baseURL: 'http://localhost:3101' })
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const avatarPng = readFileSync(path.join(__dirname, 'fixtures/avatar.png'))
 
-const EMPTY_PROFILE = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  aboutMe: '',
-  avatarUrl: '',
-}
-
 const validProfile = {
   firstName: 'Grażyna',
   lastName: 'Kowalska',
@@ -43,12 +35,11 @@ const validProfile = {
   aboutMe: 'Testuję API bezpośrednio.',
 }
 
-test.beforeEach(async ({ request }) => {
-  const res = await request.delete('/api/profile')
-  expect(res.status()).toBe(204)
+test.beforeEach(async ({ playwright }) => {
+  await resetProfileA(playwright, 'http://localhost:3101')
 })
 
-test('health odpowiada bezpośrednio na :3001', async ({ request }) => {
+test('health odpowiada bezpośrednio na :3101', async ({ request }) => {
   const res = await request.get('/api/health')
   expect(res.status()).toBe(200)
   expect(await res.json()).toEqual({ status: 'ok' })
@@ -115,4 +106,34 @@ test('odrzucenie nie-obrazu wprost na backendzie → 400 { error }', async ({ re
   })
   expect(res.status()).toBe(400)
   expect(await res.json()).toEqual({ error: 'Dozwolone tylko pliki graficzne' })
+})
+
+test.describe('diagnostyka uwierzytelniania wprost na backendzie', () => {
+  test.use({ storageState: NO_SESSION })
+
+  test('DIRECT-N1 bez sesji → 401 także z pominięciem proxy (FR-15)', async ({ request }) => {
+    const res = await request.get('/api/profile')
+    expect(res.status()).toBe(401)
+    expect(await res.json()).toEqual({ error: 'Wymagane logowanie' })
+  })
+
+  test('DIRECT-N2 logowanie z obcego originu → 403 także z pominięciem proxy', async ({
+    request,
+  }) => {
+    const res = await request.post('/api/auth/sign-in/email', {
+      headers: { Origin: 'https://evil.example' },
+      data: { email: USERS.a, password: PASSWORD },
+    })
+    expect(res.status()).toBe(403)
+  })
+
+  test('DIRECT-P1 logowanie z własnym originem działa wprost na backendzie (FR-14)', async ({
+    request,
+  }) => {
+    const res = await request.post('/api/auth/sign-in/email', {
+      headers: { Origin: APP_ORIGIN },
+      data: { email: USERS.a, password: PASSWORD },
+    })
+    expect(res.status()).toBe(200)
+  })
 })

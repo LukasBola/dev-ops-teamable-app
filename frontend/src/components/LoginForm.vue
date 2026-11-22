@@ -39,7 +39,8 @@ function onSubmit() {
       Twój identyfikator czeka. Wpisz e-mail i hasło od właściciela zespołu.
     </p>
 
-    <form class="grid gap-4" novalidate @submit.prevent="onSubmit">
+    <!-- Bez novalidate: puste pola zatrzymuje przeglądarka (fokus na pierwszym), nic nie idzie do API. -->
+    <form class="grid gap-4" @submit.prevent="onSubmit">
       <div
         v-if="error"
         id="login-error"

@@ -80,4 +80,11 @@ describe('LoginForm', () => {
   it('mówi, kogo poprosić o konto (brak publicznej rejestracji, FR-17)', () => {
     expect(mountForm().text()).toContain('Poproś właściciela zespołu o dostęp')
   })
+
+  it('puste pola blokuje walidacja przeglądarki: pola wymagane, formularz bez novalidate (FR-14)', () => {
+    const wrapper = mountForm()
+    expect(wrapper.get('form').attributes('novalidate')).toBeUndefined()
+    expect(wrapper.get('[data-test="login-email"]').attributes('required')).toBeDefined()
+    expect(wrapper.get('[data-test="login-password"]').attributes('required')).toBeDefined()
+  })
 })

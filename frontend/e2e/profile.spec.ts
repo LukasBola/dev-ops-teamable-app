@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// Reset backend state via real endpoint — "first run" state (FR-13).
+// Sesja A ze storageState (projekt `setup`); reset profilu A prawdziwym endpointem (FR-13).
 test.beforeEach(async ({ request }) => {
   const res = await request.delete('/api/profile')
   expect(res.status()).toBe(204)
