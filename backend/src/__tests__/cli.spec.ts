@@ -8,7 +8,7 @@ import { runUserCli } from '../cli/user.js'
 import { findUserIdByEmail } from '../auth/users.js'
 import { ProfileModel, LEGACY_PROFILE_ID } from '../models/Profile.js'
 import { readProfile } from '../services/profileStore.js'
-import { seedDemoUser } from '../services/seedProfile.js'
+import { seedDemoUser } from '../auth/demoUser.js'
 import { signIn } from './helpers/auth.js'
 import { useTempDataDir, exists } from './helpers/dataDir.js'
 

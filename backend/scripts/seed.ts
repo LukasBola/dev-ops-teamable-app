@@ -1,5 +1,5 @@
 import { connectDb, disconnectDb } from '../src/db/connection.js'
-import { seedDemoUser } from '../src/services/seedProfile.js'
+import { seedDemoUser } from '../src/auth/demoUser.js'
 
 async function main() {
   await connectDb()

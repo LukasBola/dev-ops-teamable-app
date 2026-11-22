@@ -5,7 +5,6 @@ import type { Profile } from '../types/profile.js'
 import { EMPTY_PROFILE } from '../types/profile.js'
 import type { ProfileInput } from '../schemas/profile.js'
 import { ProfileModel, type ProfileDoc } from '../models/Profile.js'
-import { HttpError } from '../middleware/errorHandler.js'
 
 // --- Avatar still on disk (as in Etap 2) ---
 const moduleDir = path.dirname(fileURLToPath(import.meta.url))
@@ -18,7 +17,8 @@ const USER_ID = /^[A-Za-z0-9_-]{1,64}$/
 
 /** Katalog avatara użytkownika; id spoza wzorca (np. `../etc`) nie może wyjść poza uploads. */
 export function userUploadsDir(userId: string): string {
-  if (!USER_ID.test(userId)) throw new HttpError(400, 'Niepoprawny identyfikator użytkownika')
+  // userId pochodzi z sesji/bazy, nie od klienta — zły format to błąd serwera (500), nie 400.
+  if (!USER_ID.test(userId)) throw new Error('Niepoprawny identyfikator użytkownika')
   return path.join(uploadsRoot(), userId)
 }
 
