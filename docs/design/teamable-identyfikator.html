@@ -1,0 +1,409 @@
+<title>Teamable Identyfikator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+/* Layout: one badge hangs on a lanyard from the top edge of the screen; the same object is the login form and, flipped, your profile. */
+:root {
+  --wall: #e4e8f1;        /* office wall, cool */
+  --badge: #ffffff;       /* badge card stock */
+  --ink: #18204a;         /* navy print */
+  --ink-soft: #5a6386;
+  --lanyard: #ffc53d;     /* conference-lanyard yellow */
+  --lanyard-ink: #3b2a00;
+  --line: #d3d9e8;
+  --field: #f3f5fa;
+  --error: #b3261e;
+  --error-bg: #fdecea;
+  --focus: #2d4fd6;
+  --shadow: rgba(24, 32, 74, 0.16);
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Verdana", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wall: #121831; --badge: #1d2443; --ink: #e8ecf8; --ink-soft: #a3abcb;
+    --lanyard: #ffcc4d; --lanyard-ink: #2e2100; --line: #333c63; --field: #262e52;
+    --error: #ff9b8f; --error-bg: #3a1d24; --focus: #9db0ff; --shadow: rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --wall: #121831; --badge: #1d2443; --ink: #e8ecf8; --ink-soft: #a3abcb;
+  --lanyard: #ffcc4d; --lanyard-ink: #2e2100; --line: #333c63; --field: #262e52;
+  --error: #ff9b8f; --error-bg: #3a1d24; --focus: #9db0ff; --shadow: rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--wall);
+  color: var(--ink);
+  font: 16px/1.55 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+button, input, textarea { font: inherit; color: inherit; }
+
+/* ---------- Mockup chrome: state switcher (not part of the app) ---------- */
+.studio {
+  max-width: 1040px; margin: 0 auto; padding-top: 20px;
+  display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between;
+}
+.studio p { margin: 0; color: var(--ink-soft); font-size: 0.9rem; max-width: 46ch; }
+.states { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px; border-radius: 999px; background: var(--badge); border: 1px solid var(--line); }
+.states button {
+  border: 0; background: transparent; padding: 8px 14px; border-radius: 999px; cursor: pointer; min-height: 40px;
+  font-size: 0.9rem; color: var(--ink-soft);
+}
+.states button[aria-pressed="true"] { background: var(--ink); color: var(--badge); }
+
+/* ---------- App frame ---------- */
+.app {
+  max-width: 1040px; margin: 20px auto 0; border-radius: 20px; overflow: hidden;
+  border: 1px solid var(--line); background: var(--wall); position: relative;
+  min-height: 680px; display: flex; flex-direction: column;
+}
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 24px; position: relative; z-index: 2; min-height: 64px;
+}
+.wordmark { font: 800 1.35rem/1 var(--font-display); letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; }
+.wordmark svg { width: 26px; height: 26px; }
+.account { display: flex; align-items: center; gap: 12px; font-size: 0.92rem; color: var(--ink-soft); }
+.account[hidden] { display: none !important; }
+.btn-ghost {
+  border: 1.5px solid var(--line); background: var(--badge); color: var(--ink); cursor: pointer;
+  padding: 8px 14px; border-radius: 10px; min-height: 40px; font-weight: 700; font-size: 0.92rem;
+}
+.btn-ghost:hover { border-color: var(--ink-soft); }
+
+.stage { flex: 1; display: grid; place-items: start center; padding: 0 0 48px; position: relative; }
+
+/* The lanyard: two ribbons from the top edge into the badge clip */
+.lanyard { position: absolute; top: -80px; left: 50%; width: 120px; height: 168px; transform: translateX(-50%); pointer-events: none; z-index: 1; }
+.lanyard::before, .lanyard::after {
+  content: ""; position: absolute; top: 0; width: 22px; height: 100%; background: var(--lanyard);
+  background-image: repeating-linear-gradient(180deg, transparent 0 18px, rgba(0,0,0,0.06) 18px 20px);
+}
+.lanyard::before { left: 18px; transform: skewX(14deg); transform-origin: bottom; }
+.lanyard::after { right: 18px; transform: skewX(-14deg); transform-origin: bottom; }
+
+.badge-wrap { perspective: 1400px; margin-top: 70px; width: min(400px, 100%); position: relative; z-index: 2; }
+.badge {
+  position: relative; width: 100%; transform-style: preserve-3d;
+  transition: transform 700ms cubic-bezier(.2,.8,.2,1);
+  transform-origin: 50% -40px;
+  animation: settle 900ms cubic-bezier(.2,.8,.2,1) both;
+}
+.badge.is-flipped { transform: rotateY(180deg); }
+@keyframes settle { 0% { rotate: -5deg; } 45% { rotate: 2.5deg; } 75% { rotate: -1deg; } 100% { rotate: 0deg; } }
+
+.face {
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: var(--badge); border-radius: 22px; padding: 44px 32px 30px;
+  box-shadow: 0 1px 0 var(--line), 0 24px 40px -18px var(--shadow);
+  border: 1px solid var(--line); position: relative;
+}
+.face.back { position: absolute; inset: 0; transform: rotateY(180deg); overflow: hidden; }
+/* Clip + punched slot: the one physical detail of a real badge */
+.slot {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  width: 64px; height: 12px; border-radius: 999px; background: var(--wall); box-shadow: inset 0 2px 3px var(--shadow);
+}
+.clip {
+  position: absolute; top: -26px; left: 50%; transform: translateX(-50%); width: 34px; height: 40px;
+  border-radius: 8px 8px 10px 10px; background: linear-gradient(var(--ink-soft), var(--ink)); z-index: 3;
+}
+
+/* Login face */
+.blank-name {
+  font: 800 2.1rem/1.05 var(--font-display); letter-spacing: -0.025em; margin: 6px 0 4px; text-wrap: balance;
+}
+.lede { margin: 0 0 22px; color: var(--ink-soft); }
+form { display: grid; gap: 16px; }
+.field { display: grid; gap: 6px; }
+.field label { font-weight: 700; font-size: 0.95rem; }
+.control { position: relative; }
+.control input {
+  width: 100%; min-height: 48px; padding: 12px 14px; border-radius: 12px;
+  border: 1.5px solid var(--line); background: var(--field);
+}
+.control input:hover { border-color: var(--ink-soft); }
+.control input[aria-invalid="true"] { border-color: var(--error); }
+.reveal {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  border: 0; background: transparent; cursor: pointer; min-height: 40px; padding: 0 10px; border-radius: 8px;
+  font-size: 0.88rem; font-weight: 700; color: var(--ink-soft);
+}
+.control.has-reveal input { padding-right: 84px; }
+.alert {
+  display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px;
+  background: var(--error-bg); color: var(--error); font-size: 0.95rem;
+}
+.alert svg { flex: none; width: 20px; height: 20px; margin-top: 2px; }
+.alert strong { display: block; }
+.btn-primary {
+  border: 0; cursor: pointer; min-height: 52px; border-radius: 14px; font-weight: 700; font-size: 1.02rem;
+  background: var(--ink); color: var(--badge); display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-primary:hover { filter: brightness(1.12); }
+.btn-primary[disabled] { cursor: progress; opacity: 0.85; }
+.spinner { width: 18px; height: 18px; border-radius: 50%; border: 2.5px solid currentColor; border-right-color: transparent; animation: spin 700ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.foot { margin: 18px 0 0; font-size: 0.88rem; color: var(--ink-soft); text-align: center; }
+
+/* Profile face: the filled badge */
+.band { margin: -44px -32px 0; height: 104px; background: var(--lanyard); position: relative; }
+.band span { position: absolute; left: 32px; bottom: 12px; color: var(--lanyard-ink); font: 700 0.9rem/1 var(--font-display); }
+.photo {
+  width: 104px; height: 104px; border-radius: 50%; margin: -52px auto 0; position: relative;
+  border: 5px solid var(--badge); background: #c9d3ee; overflow: hidden; display: grid; place-items: center;
+  font: 800 2.2rem/1 var(--font-display); color: #18204a;
+}
+.person { text-align: center; margin-top: 14px; }
+.person h2 { margin: 0; font: 800 2.35rem/1.02 var(--font-display); letter-spacing: -0.03em; text-wrap: balance; }
+.person .mail { margin: 8px 0 0; color: var(--ink-soft); word-break: break-all; }
+.about { margin: 20px 0 0; padding-top: 18px; border-top: 1.5px dashed var(--line); }
+.about h3 { margin: 0 0 6px; font-size: 0.95rem; }
+.about p { margin: 0; max-width: 40ch; }
+.actions { display: flex; gap: 10px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
+.btn-secondary {
+  border: 1.5px solid var(--ink); background: transparent; cursor: pointer; min-height: 44px; padding: 0 18px;
+  border-radius: 12px; font-weight: 700;
+}
+.btn-quiet { border: 0; background: transparent; cursor: pointer; min-height: 44px; padding: 0 14px; color: var(--ink-soft); font-weight: 700; border-radius: 12px; }
+
+/* Signed-out toast after logout (persistent until dismissed, per UX rule for errors; info is short) */
+.status { max-width: 400px; margin: 0 auto 14px; font-size: 0.92rem; color: var(--ink-soft); text-align: center; min-height: 1.4em; }
+
+/* ---------- Notes under the mockup ---------- */
+.notes { max-width: 1040px; margin: 40px auto 0; display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.notes section { min-width: 0; }
+.notes h2 { font: 800 1.35rem/1.15 var(--font-display); letter-spacing: -0.02em; margin: 0 0 10px; }
+.notes ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+.notes li { max-width: 60ch; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.sw { border-radius: 12px; border: 1px solid var(--line); overflow: hidden; background: var(--badge); font-size: 0.85rem; }
+.sw i { display: block; height: 44px; }
+.sw div { padding: 8px 10px; }
+.sw b { display: block; }
+.typo .d { font: 800 2.2rem/1 var(--font-display); letter-spacing: -0.03em; margin: 0; }
+.typo .b { margin: 8px 0 0; }
+
+@media (max-width: 560px) {
+  .topbar { padding: 14px 16px; }
+  .account span { display: none; }
+  .face { padding: 40px 22px 26px; }
+  .band { margin: -40px -22px 0; }
+  .band span { left: 22px; }
+  .blank-name { font-size: 1.85rem; }
+  .person h2 { font-size: 2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge { animation: none; transition: none; }
+  .spinner { animation-duration: 2s; }
+}
+</style>
+
+<div class="studio">
+  <p>Makieta interaktywna. Zaloguj się dowolnym e-mailem i hasłem <b>tajne-haslo</b>; inne hasło pokazuje błąd. Przełącznik obok skacze między stanami.</p>
+  <div class="states" role="group" aria-label="Stan makiety">
+    <button type="button" data-state="login" aria-pressed="true">Logowanie</button>
+    <button type="button" data-state="error" aria-pressed="false">Błąd</button>
+    <button type="button" data-state="loading" aria-pressed="false">Wysyłanie</button>
+    <button type="button" data-state="profile" aria-pressed="false">Profil</button>
+  </div>
+</div>
+
+<div class="app">
+  <header class="topbar">
+    <div class="wordmark">
+      <svg viewBox="0 0 26 26" aria-hidden="true"><rect x="3" y="5" width="20" height="18" rx="5" fill="var(--ink)"/><rect x="9" y="2" width="8" height="6" rx="2" fill="var(--lanyard)"/><circle cx="13" cy="13" r="3" fill="var(--badge)"/><rect x="8" y="17.5" width="10" height="2.2" rx="1.1" fill="var(--badge)"/></svg>
+      Teamable
+    </div>
+    <div class="account" id="account" hidden>
+      <span id="account-mail">anna@teamable.dev</span>
+      <button type="button" class="btn-ghost" id="logout">Wyloguj</button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <div class="lanyard" aria-hidden="true"></div>
+    <div class="badge-wrap">
+      <p class="status" id="status" role="status"></p>
+      <div class="badge" id="badge">
+        <div class="clip" aria-hidden="true"></div>
+
+        <!-- Front: blank badge = login -->
+        <section class="face front" id="front" aria-labelledby="login-title">
+          <div class="slot" aria-hidden="true"></div>
+          <h1 class="blank-name" id="login-title">Zaloguj się do zespołu</h1>
+          <p class="lede">Twój identyfikator czeka. Wpisz e-mail i hasło od właściciela zespołu.</p>
+          <form id="login" novalidate>
+            <div class="alert" id="login-error" role="alert" hidden>
+              <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 5.5v5.5M10 13.6v.9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+              <div><strong>Niepoprawny e-mail lub hasło</strong>Sprawdź oba pola i spróbuj ponownie.</div>
+            </div>
+            <div class="field">
+              <label for="email">E-mail</label>
+              <div class="control"><input id="email" name="email" type="email" autocomplete="username" inputmode="email" spellcheck="false" required value="anna@teamable.dev"></div>
+            </div>
+            <div class="field">
+              <label for="password">Hasło</label>
+              <div class="control has-reveal">
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+                <button type="button" class="reveal" id="reveal" aria-controls="password" aria-pressed="false">Pokaż</button>
+              </div>
+            </div>
+            <button type="submit" class="btn-primary" id="submit">Zaloguj</button>
+          </form>
+          <p class="foot">Nie masz konta? Poproś właściciela zespołu o dostęp.</p>
+        </section>
+
+        <!-- Back: filled badge = profile -->
+        <section class="face back" id="back" aria-labelledby="person-name" aria-hidden="true">
+          <div class="band"><span>Członek zespołu</span></div>
+          <div class="photo" aria-hidden="true">AN</div>
+          <div class="person">
+            <h2 id="person-name">Anna Nowak</h2>
+            <p class="mail">anna@teamable.dev</p>
+          </div>
+          <div class="about">
+            <h3>O mnie</h3>
+            <p>Front-end i dostępność. Pytaj mnie o formularze, kontrast i to, czemu fokus musi być widoczny.</p>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn-secondary">Edytuj profil</button>
+            <button type="button" class="btn-quiet">Resetuj profil</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="notes">
+  <section>
+    <h2>Pomysł</h2>
+    <ul>
+      <li>Teamable to profil członka zespołu, więc głównym obiektem jest identyfikator na smyczy, który dostajesz pierwszego dnia.</li>
+      <li>Logowanie to pusty identyfikator. Po zalogowaniu ten sam przedmiot obraca się i pokazuje Twój profil. To jedyna animacja: obrót przy zalogowaniu i lekkie wychylenie przy wejściu.</li>
+      <li>Wylogowanie obraca identyfikator z powrotem i czyści dane z widoku, zanim pojawi się formularz.</li>
+      <li>Przy włączonym „ogranicz ruch” stany zmieniają się bez animacji.</li>
+    </ul>
+  </section>
+  <section>
+    <h2>Kolory</h2>
+    <div class="swatches">
+      <div class="sw"><i style="background:var(--wall)"></i><div><b>Ściana</b>tło</div></div>
+      <div class="sw"><i style="background:var(--badge)"></i><div><b>Karton</b>identyfikator</div></div>
+      <div class="sw"><i style="background:var(--ink)"></i><div><b>Granat</b>tekst, przycisk</div></div>
+      <div class="sw"><i style="background:var(--lanyard)"></i><div><b>Smycz</b>jedyny akcent</div></div>
+      <div class="sw"><i style="background:var(--error)"></i><div><b>Błąd</b>tylko komunikaty</div></div>
+    </div>
+  </section>
+  <section class="typo">
+    <h2>Typografia</h2>
+    <p class="d">Anna Nowak</p>
+    <p class="b">Bricolage Grotesque do imion i nagłówków. Atkinson Hyperlegible do formularzy i tekstu: krój zaprojektowany dla czytelności przy słabszym wzroku.</p>
+  </section>
+  <section>
+    <h2>Reguły UX (ui-ux-pro-max)</h2>
+    <ul>
+      <li>Wklejanie i menedżery haseł działają: <code>autocomplete="username"</code> i <code>current-password</code>.</li>
+      <li>Przycisk „Pokaż” przy haśle, z nazwą dla czytnika ekranu i stanem wciśnięcia.</li>
+      <li>Błąd zostaje widoczny do kolejnej próby, w <code>role="alert"</code>, i mówi, co zrobić. E-mail zostaje, hasło jest czyszczone.</li>
+      <li>„Zaloguj” jest zawsze aktywny; blokuje się tylko na czas wysyłania, ze wskaźnikiem.</li>
+      <li>Pola i przyciski mają co najmniej 44 px wysokości, fokus ma wyraźny obrys.</li>
+      <li>Brak publicznej rejestracji, więc zamiast linku „Załóż konto” jest informacja, kogo poprosić o dostęp.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id)
+  const badge = $('badge'), front = $('front'), back = $('back')
+  const form = $('login'), err = $('login-error'), submit = $('submit')
+  const email = $('email'), password = $('password'), reveal = $('reveal')
+  const account = $('account'), status = $('status')
+  const stateButtons = document.querySelectorAll('[data-state]')
+
+  function setPressed(state) {
+    stateButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.state === state)))
+  }
+  function setLoading(on) {
+    submit.disabled = on
+    submit.innerHTML = on ? '<span class="spinner" aria-hidden="true"></span>Logowanie…' : 'Zaloguj'
+  }
+  function showError(on) {
+    err.hidden = !on
+    email.setAttribute('aria-invalid', String(on))
+    password.setAttribute('aria-invalid', String(on))
+  }
+  function showProfile(on) {
+    badge.classList.toggle('is-flipped', on)
+    front.setAttribute('aria-hidden', String(on))
+    back.setAttribute('aria-hidden', String(!on))
+    front.inert = on
+    back.inert = !on
+    account.hidden = !on
+  }
+  function go(state) {
+    setPressed(state)
+    status.textContent = ''
+    setLoading(state === 'loading')
+    showError(state === 'error')
+    showProfile(state === 'profile')
+    if (state === 'error') password.value = ''
+  }
+
+  stateButtons.forEach((b) => b.addEventListener('click', () => go(b.dataset.state)))
+
+  reveal.addEventListener('click', () => {
+    const show = password.type === 'password'
+    password.type = show ? 'text' : 'password'
+    reveal.textContent = show ? 'Ukryj' : 'Pokaż'
+    reveal.setAttribute('aria-pressed', String(show))
+    reveal.setAttribute('aria-label', show ? 'Ukryj hasło' : 'Pokaż hasło')
+  })
+  reveal.setAttribute('aria-label', 'Pokaż hasło')
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault()
+    showError(false)
+    setLoading(true)
+    setPressed('loading')
+    setTimeout(() => {
+      setLoading(false)
+      if (password.value === 'tajne-haslo') {
+        $('account-mail').textContent = email.value || 'anna@teamable.dev'
+        password.value = ''
+        setPressed('profile')
+        showProfile(true)
+        $('person-name').focus({ preventScroll: true })
+      } else {
+        password.value = ''
+        setPressed('error')
+        showError(true)
+        password.focus()
+      }
+    }, 900)
+  })
+
+  $('person-name').tabIndex = -1
+  $('logout').addEventListener('click', () => {
+    showProfile(false)
+    setPressed('login')
+    status.textContent = 'Wylogowano. Do zobaczenia.'
+    $('login-title').tabIndex = -1
+    $('login-title').focus({ preventScroll: true })
+  })
+
+  go('login')
+})()
+</script>
