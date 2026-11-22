@@ -11,6 +11,7 @@ import {
   userUploadsDir,
 } from '../services/profileStore.js'
 import { EMPTY_PROFILE } from '../types/profile.js'
+import { HttpError } from '../middleware/errorHandler.js'
 
 // Profile state is reset by shared setup (deleteMany). Here we isolate the avatar dir.
 let dataDir: string
@@ -104,4 +105,15 @@ describe('profileStore (MongoDB)', () => {
       expect(() => userUploadsDir(bad)).toThrow()
     },
   )
+
+  it('userUploadsDir(złe id) rzuca błąd serwera, nie HttpError (userId pochodzi z sesji)', () => {
+    expect(() => userUploadsDir('../etc')).toThrow('Niepoprawny identyfikator użytkownika')
+    let caught: unknown
+    try {
+      userUploadsDir('../etc')
+    } catch (e) {
+      caught = e
+    }
+    expect(caught).not.toBeInstanceOf(HttpError)
+  })
 })
