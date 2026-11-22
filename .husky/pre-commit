@@ -1,9 +1,2 @@
 npx lint-staged
-
-# Graf Graphify w tym samym commicie co kod (pre-commit, nie `graphify hook install`:
-# husky ustawia core.hooksPath, więc hooki z .git/hooks się nie uruchamiają).
-# Bez graphify w PATH (CI, GUI, świeży klon) albo z GRAPHIFY_SKIP_HOOK=1 — pomijamy.
-if [ "${GRAPHIFY_SKIP_HOOK:-0}" != "1" ] && command -v graphify >/dev/null 2>&1 \
-  && [ -n "$(git diff --cached --name-only -- . ':!graphify-out/graph.json')" ]; then
-  PYTHONHASHSEED=0 graphify update . && git add graphify-out/graph.json
-fi
+. "$(dirname "$0")/graphify-update.sh"

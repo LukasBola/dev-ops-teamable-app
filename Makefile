@@ -61,7 +61,9 @@ test: ## Testy jednostkowe/integracyjne (backend wymaga Dockera)
 	npm --prefix frontend run test:unit -- --run
 
 graphify-setup: ## Zarejestruj merge driver grafu Graphify w tym klonie (raz na klon)
-	@PY="$$(sed -n '1s/^#!//p' "$$(command -v graphify)")"; \
+	@G="$$(command -v graphify)" || { echo "graphify nie jest w PATH (uv tool install graphifyy)" >&2; exit 1; }; \
+	PY="$$(sed -n '1s/^#!//p' "$$G")"; \
+	"$$PY" -c 'import graphify' 2>/dev/null || { echo "Nie znaleziono Pythona graphify w shebangu $$G" >&2; exit 1; }; \
 	git config merge.graphify.name "graphify graph.json union merge"; \
 	git config merge.graphify.driver "\"$$PY\" -m graphify merge-driver %O %A %B"; \
 	echo "merge driver graphify: $$PY"
