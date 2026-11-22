@@ -31,6 +31,7 @@ Przeglądarka rozmawia z API wyłącznie przez origin frontendu. Usuwamy `cors()
 **Niewiadome**
 
 - Czy przy proxy Vite (dev) wystarczy `BETTER_AUTH_URL` = origin dev serwera — do weryfikacji przy wdrożeniu.
+  - **Rozstrzygnięte (2026-11-22, Task 8 Step 3):** tak. `npm run dev` (Vite :5173, backend :3001, `BETTER_AUTH_URL=http://localhost:5173`): logowanie, widok profilu i wylogowanie w przeglądarce działają; to samo przez nginx w compose (`BETTER_AUTH_URL=http://localhost:8080`).
 
 ## Dowody
 

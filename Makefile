@@ -2,7 +2,8 @@
 # `make` lub `make help` wypisuje dostępne komendy.
 #
 # Wymaga: Node 20.6+ (flaga --env-file-if-exists), Docker (MongoDB + testy).
-# MONGODB_URI itp. czytane są z backend/.env (tworzony z .env.example przez `make env`).
+# MONGODB_URI, BETTER_AUTH_* itp. czytane są z backend/.env, a docker compose czyta .env —
+# oba tworzy `make env` z plików *.example, z wygenerowanym sekretem.
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
@@ -19,8 +20,12 @@ install: ## Zainstaluj zależności (backend + frontend)
 	npm --prefix backend install
 	npm --prefix frontend install
 
-env: ## Utwórz backend/.env z .env.example (jeśli nie istnieje)
-	@test -f backend/.env || { cp backend/.env.example backend/.env && echo "Utworzono backend/.env"; }
+env: ## Utwórz backend/.env i .env (compose) z przykładów, z nowym BETTER_AUTH_SECRET (istniejących nie rusza)
+	@for f in backend/.env .env; do \
+		test -f $$f && continue; \
+		sed "s|^BETTER_AUTH_SECRET=$$|BETTER_AUTH_SECRET=$$(openssl rand -base64 32)|" $$f.example > $$f; \
+		echo "Utworzono $$f (z wygenerowanym BETTER_AUTH_SECRET)"; \
+	done
 
 up: env ## Start MongoDB w tle (czeka, aż baza będzie gotowa)
 	$(COMPOSE) up -d --wait
