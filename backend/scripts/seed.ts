@@ -1,10 +1,10 @@
 import { connectDb, disconnectDb } from '../src/db/connection.js'
-import { seedDemoProfile } from '../src/services/seedProfile.js'
+import { seedDemoUser } from '../src/services/seedProfile.js'
 
 async function main() {
   await connectDb()
-  await seedDemoProfile()
-  console.log('Seeded demo profile.')
+  await seedDemoUser()
+  console.log(`Konto demo gotowe: ${process.env.DEMO_USER_EMAIL}`)
   await disconnectDb()
 }
 

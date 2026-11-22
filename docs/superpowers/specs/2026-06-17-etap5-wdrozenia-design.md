@@ -127,6 +127,23 @@ Trzy środowiska konfigurowane w Settings → Environments:
 - **Approval gate na `production`** — required reviewers wstrzymuje job prod do ręcznego zatwierdzenia. To jądro nauki kontrolowanej promocji.
 - W modelu ephemeral Mongo jest w stacku, więc `MONGODB_URI` może być stałe; sekret pokazuje **wzorzec** zarządzania, gotowy pod realny host.
 
+### 3a. Wymagania z Etapu 4.5 (uwierzytelnianie)
+
+> Dopisane 2026-11-22 po wdrożeniu Etapu 4.5 ([ADR-0001](../../adr/0001-better-auth.md), [ADR-0004](../../adr/0004-walidacja-env-zod.md)). Backend nie wystartuje bez tych zmiennych (walidacja Zod).
+
+| Environment | Secrets (dochodzą) | Variables (dochodzą) |
+|---|---|---|
+| `dev` | `BETTER_AUTH_SECRET` (własny), `DEMO_USER_PASSWORD` | `BETTER_AUTH_URL=http://localhost:8081`, `DEMO_USER_EMAIL` |
+| `staging` | `BETTER_AUTH_SECRET` (własny), `DEMO_USER_PASSWORD` | `BETTER_AUTH_URL=http://localhost:8082`, `DEMO_USER_EMAIL` |
+| `production` | `BETTER_AUTH_SECRET` (własny) | `BETTER_AUTH_URL=http://localhost:8083` |
+
+- **`BETTER_AUTH_SECRET` różny w każdym środowisku** (min. 32 znaki, `openssl rand -base64 32`). Ten sam sekret oznaczałby, że ciasteczko z dev działa na produkcji [wniosek].
+- **`BETTER_AUTH_URL` = adres, pod którym przeglądarka widzi aplikację** w danym środowisku (porty z decyzji 36). Inny origin → logowanie 403 (ADR-0002, ADR-0003).
+- **`SEED_ON_START=true` zakłada konto demo** (`seedDemoUser`: brak → tworzy, istnieje → resetuje hasło i profil), więc wymaga `DEMO_USER_EMAIL` i `DEMO_USER_PASSWORD`. Produkcja bez seeda startuje bez kont; pierwsze konto zakłada się przez `docker compose exec backend node dist/cli/user.js create …`.
+- **Port backendu nie może być publikowany** w `docker-compose.deploy.yml` (tylko frontend/nginx). Limit prób logowania liczy po nagłówku `X-Real-IP`, który ustawia nginx; z otwartym portem klient mógłby go podać sam i obejść limit.
+- **Publiczne wdrożenie (realny host) wymaga `https` w `BETTER_AUTH_URL`** — ciasteczko sesji przez zwykłe `http` w sieci publicznej to podsłuchiwalny token [wniosek]. W modelu ephemeral (localhost) `http` wystarcza.
+- **Smoke test** może zostać przy `/api/health` (publiczny). Opcjonalnie, w środowiskach z seedem: logowanie kontem demo i `GET /api/profile` → 200, co sprawdza sekret i `BETTER_AUTH_URL` w działającym stacku.
+
 ## 4. Workflow CD
 
 `.github/workflows/cd.yml` (szkic):

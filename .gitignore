@@ -22,3 +22,5 @@ test-results/
 
 
 .claude
+# Sesje Playwright (E2E) — tokeny z przebiegu testów
+frontend/e2e/.auth/

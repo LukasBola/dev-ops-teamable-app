@@ -17,6 +17,8 @@ COPY scripts/migrate.cjs ./scripts/migrate.cjs
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x docker-entrypoint.sh && mkdir -p data/uploads && chown -R app:app /app
 USER app
+# Tryb produkcyjny: m.in. limit prób logowania w Better Auth działa tylko z NODE_ENV=production.
+ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
 HEALTHCHECK --interval=10s --timeout=5s --retries=3 \

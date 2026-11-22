@@ -1,22 +1,36 @@
 import { ref } from 'vue'
-import { getProfile, saveProfile, uploadAvatar } from '../services/profileService'
+import { ApiError, getProfile, saveProfile, uploadAvatar } from '../services/profileService'
 import { DEFAULT_PROFILE, type Profile } from '../types/profile'
 
-export function useProfile() {
+export function useProfile(options: { onUnauthorized?: () => void } = {}) {
   const profile = ref<Profile>({ ...DEFAULT_PROFILE })
   const loading = ref(true)
   const error = ref('')
+  // Numer bieżącego ładowania: odpowiedź sprzed clear() (np. poprzedniego użytkownika) jest odrzucana.
+  let ticket = 0
 
   async function load(): Promise<void> {
+    const mine = ++ticket
     loading.value = true
     error.value = ''
     try {
-      profile.value = await getProfile()
+      const loaded = await getProfile()
+      if (mine === ticket) profile.value = loaded
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Nie udało się wczytać profilu.'
+      if (mine !== ticket) return
+      if (e instanceof ApiError && e.status === 401) options.onUnauthorized?.()
+      else error.value = e instanceof Error ? e.message : 'Nie udało się wczytać profilu.'
     } finally {
-      loading.value = false
+      if (mine === ticket) loading.value = false
     }
+  }
+
+  /** Czyści dane z pamięci SPA (wylogowanie, zmiana użytkownika). */
+  function clear(): void {
+    ticket++
+    profile.value = { ...DEFAULT_PROFILE }
+    loading.value = true
+    error.value = ''
   }
 
   // Order (spec 4): upload first, then PUT fields.
@@ -30,7 +44,5 @@ export function useProfile() {
     profile.value = await saveProfile(next)
   }
 
-  void load()
-
-  return { profile, loading, error, save, reload: load }
+  return { profile, loading, error, save, load, clear }
 }

@@ -1,7 +1,7 @@
 # Teamable — Wymagania projektu
 
-> **Status dokumentu:** v0.5 (Etapy 5 — Wdrożenia/CD — i 6 — Obserwowalność/jakość — specy i plany gotowe, żywy dokument)
-> **Ostatnia aktualizacja:** 2026-06-17
+> **Status dokumentu:** v0.6 (Etap 4.5 — Uwierzytelnianie — wdrożony; Etapy 5 i 6 — specy i plany gotowe, żywy dokument)
+> **Ostatnia aktualizacja:** 2026-11-22
 > **Charakter projektu:** projekt edukacyjny — aplikacja jest **poligonem do nauki DevOps**, nie celem samym w sobie.
 
 ---
@@ -39,7 +39,7 @@ Aplikacja (profil użytkownika) jest **pretekstem** — ma być na tyle prosta, 
 
 - Backend (Express) — **nie implementujemy teraz**, ale projektujemy frontend tak, by integracja była łatwa (patrz 5.3).
 - Baza danych (MongoDB) — planowana, nieimplementowana.
-- Uwierzytelnianie / autoryzacja, wielu użytkowników.
+- ~~Uwierzytelnianie / autoryzacja, wielu użytkowników.~~ → w zakresie **Etapu 4.5** (logowanie e-mail + hasło, prywatny profil każdego użytkownika; role i panel admina nadal poza zakresem).
 - Realne przechowywanie i hosting zdjęć (CDN/storage).
 
 ### 2.3 Plan rozwoju (kolejne etapy — orientacyjnie)
@@ -50,6 +50,7 @@ Aplikacja (profil użytkownika) jest **pretekstem** — ma być na tyle prosta, 
 | 2 | Backend Express + API profilu | Testy integracyjne, kontrakt API, build wielu artefaktów |
 | 3 | Integracja z MongoDB | Migracje, testy z bazą (np. kontenery testowe), seedy danych |
 | 4 | Konteneryzacja (Docker) | Obrazy, docker-compose, środowiska lokalne = prod-like |
+| 4.5 | Uwierzytelnianie (Better Auth) i profil per użytkownik | Sekrety poza repo, walidacja konfiguracji, migracje indeksów, testy bezpieczeństwa (pozytywne i negatywne) |
 | 5 | Wdrożenia na środowiska (dev/staging/prod) | CD, promocja artefaktów, sekrety, zmienne środowiskowe |
 | 6 | Obserwowalność i jakość | Logi, metryki, coverage gates, ewentualnie analiza statyczna |
 
@@ -57,7 +58,7 @@ Aplikacja (profil użytkownika) jest **pretekstem** — ma być na tyle prosta, 
 
 ### 2.4 Specyfikacje i plany implementacji (linki)
 
-Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers/`:
+Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers/`. Decyzje architektoniczne od Etapu 4.5 — w [`docs/adr/`](docs/adr/README.md). Projekt UI — w [`docs/design/`](docs/design/).
 
 | Etap | Spec (projekt techniczny) | Plan implementacji |
 |------|---------------------------|--------------------|
@@ -65,6 +66,7 @@ Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers
 | 2 — Backend + API | [2026-06-10-etap2-backend-design.md](docs/superpowers/specs/2026-06-10-etap2-backend-design.md) | [2026-06-10-etap2-backend.md](docs/superpowers/plans/2026-06-10-etap2-backend.md) |
 | 3 — MongoDB | [2026-06-11-etap3-mongodb-design.md](docs/superpowers/specs/2026-06-11-etap3-mongodb-design.md) | [2026-06-11-etap3-mongodb.md](docs/superpowers/plans/2026-06-11-etap3-mongodb.md) |
 | 4 — Docker | [2026-06-11-etap4-docker-design.md](docs/superpowers/specs/2026-06-11-etap4-docker-design.md) | [2026-06-11-etap4-docker.md](docs/superpowers/plans/2026-06-11-etap4-docker.md) |
+| 4.5 — Uwierzytelnianie | [2026-11-22-etap4-5-auth-design.md](docs/superpowers/specs/2026-11-22-etap4-5-auth-design.md) | [2026-11-22-etap4-5-auth.md](docs/superpowers/plans/2026-11-22-etap4-5-auth.md) |
 | 5 — Wdrożenia (CD) | [2026-06-17-etap5-wdrozenia-design.md](docs/superpowers/specs/2026-06-17-etap5-wdrozenia-design.md) | [2026-06-17-etap5-wdrozenia.md](docs/superpowers/plans/2026-06-17-etap5-wdrozenia.md) |
 | 6 — Obserwowalność i jakość | [2026-06-17-etap6-obserwowalnosc-jakosc-design.md](docs/superpowers/specs/2026-06-17-etap6-obserwowalnosc-jakosc-design.md) | [2026-06-17-etap6-obserwowalnosc-jakosc.md](docs/superpowers/plans/2026-06-17-etap6-obserwowalnosc-jakosc.md) |
 
@@ -99,13 +101,26 @@ Szczegóły projektowe: [spec Etapu 2](docs/superpowers/specs/2026-06-10-etap2-b
 | ID | Wymaganie | Kryterium akceptacji (skrót) |
 |----|-----------|------------------------------|
 | FR-8 | Trwałość profilu przez backend w pliku JSON na dysku; po ponownym otwarciu aplikacji wczytuje się ostatnio zapisany profil. | Po zapisie i restarcie aplikacji/serwera widać ostatnie dane (zastępuje `localStorage` z FR-7 jako mechanizm trwałości). |
-| FR-9 | Przy pierwszym uruchomieniu (brak zapisanych danych) profil ma puste wartości — bez danych i bez zdjęcia. | Czysty stan → puste pola, brak zdjęcia (zmienia domyślny seed z FR-1). |
+| FR-9 | Przy pierwszym uruchomieniu (brak zapisanych danych) profil ma puste wartości — bez danych i bez zdjęcia. **Etap 4.5:** nowe konto ma pusty profil z wyjątkiem e-maila kontaktowego = e-mail logowania. | Czysty stan → puste pola, brak zdjęcia (zmienia domyślny seed z FR-1); nowe konto → e-mail kontaktowy wypełniony. |
 | FR-10 | Zdjęcie profilowe jest wysyłane na backend i zapisywane jako plik; po zapisaniu serwowane z backendu. | Po zapisie profilu zdjęcie utrwalone i widoczne po reloadzie (rozszerza FR-5 o trwałość serwerową). |
 | FR-11 | Edycja profilu z przyciskami **Zapisz** / **Anuluj**; „Anuluj" odrzuca niezapisane zmiany, w tym wybrane, niewysłane zdjęcie. | Po „Anuluj" backend i widok bez zmian; brak osieroconego pliku na serwerze. |
 | FR-12 | Walidacja email również po stronie serwera. | `PUT` z niepoprawnym email zwraca błąd i nie zapisuje (rozszerza FR-6). |
-| FR-13 | Możliwość usunięcia profilu (reset do stanu pustego). | `DELETE` czyści dane i zdjęcie → stan „pierwsze uruchomienie". |
+| FR-13 | Możliwość usunięcia profilu (reset do stanu pustego). **Etap 4.5:** dotyczy profilu zalogowanego użytkownika. | `DELETE` czyści dane i zdjęcie → stan „pierwsze uruchomienie"; profile innych użytkowników bez zmian. |
 
 > **Etap 3:** mechanizm trwałości z FR-8 (plik JSON) zostaje zastąpiony przez **MongoDB**; kryteria akceptacji FR-8…FR-13 pozostają w mocy (zmienia się tylko backend trwałości). Szczegóły: [spec Etapu 3](docs/superpowers/specs/2026-06-11-etap3-mongodb-design.md).
+
+### 4.2 Wymagania funkcjonalne (Etap 4.5 — Uwierzytelnianie)
+
+Szczegóły projektowe: [spec Etapu 4.5](docs/superpowers/specs/2026-11-22-etap4-5-auth-design.md), decyzje: [ADR-0001…0010](docs/adr/README.md). Każde FR ma w E2E test pozytywny i negatywny (ID w nazwie testu).
+
+| ID | Wymaganie | Kryterium akceptacji (skrót) |
+|----|-----------|------------------------------|
+| FR-14 | Logowanie e-mail + hasło. | Poprawne dane → widok profilu; złe → komunikat „Niepoprawny e-mail lub hasło", bez ujawniania, czy konto istnieje. |
+| FR-15 | Niezalogowany widzi tylko ekran logowania; API profilu bez sesji zwraca 401. | `GET/PUT/DELETE /api/profile` i `/api/profile/avatar` bez ciasteczka → 401. |
+| FR-16 | Wylogowanie. | Po „Wyloguj" widok logowania; stare ciasteczko nie daje dostępu do API. |
+| FR-17 | Brak publicznej rejestracji; konta tworzy, usuwa i resetuje im hasło właściciel przez CLI (`create`/`set-password`/`delete`). Reset hasła unieważnia wszystkie sesje użytkownika; resetu hasła przez e-mail nie ma. | `POST /api/auth/sign-up/email` odrzucony; `create` tworzy konto, które może się zalogować; po `set-password` stare ciasteczko → 401. |
+| FR-18 | Profil i avatar są prywatne: użytkownik widzi i zmienia wyłącznie własne. | Użytkownik A nie odczyta ani nie zmieni profilu/avatara B żadnym endpointem. |
+| FR-19 | Usunięcie konta usuwa profil, avatar i sesje. | Po `delete` sesja usuniętego → 401; brak jego dokumentu profilu i katalogu avatara. |
 
 ---
 
@@ -138,6 +153,7 @@ Frontend projektujemy tak, by przyszła integracja z **Express + MongoDB** była
 
 - **Warstwa dostępu do danych odizolowana** w jednym module (np. `services/profileService.ts`) z funkcjami typu `getProfile()` / `updateProfile()`. Na Etapie 1 czytają/zapisują `localStorage`; na Etapie 2 zostaną podmienione na wywołania HTTP — bez zmian w komponentach.
 - **Konfiguracja przez zmienne środowiskowe** (np. `VITE_API_BASE_URL`), nawet jeśli teraz nieużywana — przyzwyczaja do wzorca „config zależny od środowiska”, kluczowego w DevOps.
+  - **Etap 4.5:** `VITE_API_BASE_URL` usunięty — frontend i API zawsze pod jednym originem (proxy Vite / nginx), bo sesja jest w ciasteczku ([ADR-0002](docs/adr/0002-jeden-origin-spa-api.md)). Konfiguracja środowiskowa żyje teraz po stronie backendu, walidowana przy starcie ([ADR-0004](docs/adr/0004-walidacja-env-zod.md)).
 - **Stabilny kształt modelu danych** profilu (patrz 5.4), żeby kontrakt z backendem był przewidywalny.
 
 ### 5.4 Model danych profilu (kontrakt roboczy)
@@ -157,6 +173,8 @@ interface Profile {
 > **Zmiana kontraktu (Etap 2):** semantyka `avatarUrl` zmienia się z base64 data URL (Etap 1) na **ścieżkę/URL pliku serwowanego przez backend** (np. `/api/profile/avatar`); pusty string = brak zdjęcia. Kształt interfejsu bez zmian.
 >
 > **Trwałość (Etap 3):** źródłem prawdy profilu jest teraz **dokument MongoDB** (kolekcja `profiles`, singleton `_id:'profile'`). Kształt `Profile` i semantyka `avatarUrl` bez zmian; zdjęcie nadal plikiem na dysku, w dokumencie trzymany jest tylko `avatarUrl`. Mechanizm trwałości FR-8 (plik JSON) zostaje **zastąpiony przez MongoDB** — analogicznie do tego, jak FR-8 zastąpił `localStorage` z FR-7.
+>
+> **Profil per użytkownik (Etap 4.5):** dokument profilu ma `_id = userId` (ID konta Better Auth), avatar leży w `uploads/<userId>/`. Kształt `Profile` w API bez zmian (bez `_id`). Singleton `_id:'profile'` przejmuje pierwsze konto utworzone przez CLI ([ADR-0005](docs/adr/0005-profil-per-uzytkownik.md)).
 
 ---
 
@@ -176,7 +194,7 @@ Testy są **pierwszorzędnym celem projektu**, nie dodatkiem. Stosujemy piramid�
 - Testy uruchamiane lokalnie **i** w CI tym samym poleceniem (np. `npm test`, `npm run test:e2e`).
 - Pokrycie kodu (coverage) mierzone od początku; próg (gate) wprowadzimy stopniowo, by nie blokować nauki na starcie.
 
-> **Etap 6:** wprowadzono twardy próg pokrycia (70% lines/functions/branches/statements) jako bramę CI dla frontend i backend; spadek poniżej progu czerwieni pipeline. Dochodzą też dwie analizy statyczne: **CodeQL** (bezpieczeństwo) i **SonarCloud** (utrzymywalność). Szczegóły: [spec Etapu 6](docs/superpowers/specs/2026-06-17-etap6-obserwowalnosc-jakosc-design.md).
+> **Etap 6 (plan):** wprowadzimy twardy próg pokrycia (70% lines/functions/branches/statements) jako bramę CI dla frontend i backend; spadek poniżej progu będzie czerwienić pipeline. Dojdą też dwie analizy statyczne: **CodeQL** (bezpieczeństwo) i **SonarCloud** (utrzymywalność). Szczegóły: [spec Etapu 6](docs/superpowers/specs/2026-06-17-etap6-obserwowalnosc-jakosc-design.md).
 
 ---
 
@@ -299,7 +317,27 @@ Etap 1 uznajemy za zakończony, gdy:
 | 41 | Coverage gate | **Vitest** próg 70% (frontend + backend); spadek łamie CI; raport lcov. |
 | 42 | Analiza statyczna #1 | **CodeQL** (GitHub native) — bezpieczeństwo, wynik w zakładce Security. |
 | 43 | Analiza statyczna #2 | **SonarCloud** — utrzymywalność, code smells, quality gate; konsumuje lcov. |
+| 49 | Analiza dynamiczna (DAST) | **OWASP ZAP baseline** w CI przeciw stackowi compose (dopisane 2026-11-22; numer po zarezerwowanych #44–48 Etapu 4.5). |
+
+#### Decyzje — Etap 4.5 (Uwierzytelnianie)
+
+Od tego etapu pełna treść decyzji (kontekst, opcje, konsekwencje, dowody) jest w ADR-ach; tabela jest skrótem. Numer #49 zajęła wcześniej decyzja Etapu 6 (OWASP ZAP), stąd przeskok 48 → 50.
+
+| # | Temat | Decyzja | ADR |
+|---|-------|---------|-----|
+| 44 | Uwierzytelnianie | **Better Auth**, e-mail + hasło, zamknięta rejestracja, konta przez CLI, adapter MongoDB bez transakcji. | [0001](docs/adr/0001-better-auth.md) |
+| 45 | Origin | SPA i API pod jednym originem, bez CORS; `VITE_API_BASE_URL` usunięty. | [0002](docs/adr/0002-jeden-origin-spa-api.md) |
+| 46 | CSRF | `originCheck`: mutacje `/api` z obcym `Origin` → 403. | [0003](docs/adr/0003-ochrona-csrf-origin.md) |
+| 47 | Konfiguracja | Zod waliduje env przy starcie; brak sekretu = brak startu. | [0004](docs/adr/0004-walidacja-env-zod.md) |
+| 48 | Dane | Profil per użytkownik (`_id = userId`), przejęcie singletonu. | [0005](docs/adr/0005-profil-per-uzytkownik.md) |
+| 50 | Indeksy | Indeksy kolekcji auth zakładane migracją; duplikaty blokują start. | [0006](docs/adr/0006-indeksy-auth-w-migracji.md) |
+| 51 | Zależności | Jedna wersja sterownika `mongodb` (przypięta do wersji z mongoose). | [0007](docs/adr/0007-jeden-sterownik-mongodb.md) |
+| 52 | UI | Projekt „Identyfikator”: tokeny w `@theme` Tailwind 4, fonty serwowane lokalnie. | [0008](docs/adr/0008-ui-identyfikator-tokeny-fonty.md) |
+| 53 | E2E auth | Projekt `setup` + `storageState`, sekrety generowane na przebieg, kontrprzykłady jako dowód testów negatywnych. | [0009](docs/adr/0009-e2e-auth-storagestate-sekrety-per-przebieg.md) |
+| 54 | Przekazanie projektu | Paczka dla projektanta: tokeny W3C (DTCG), makieta HTML, zrzuty — zamiast natywnego `.fig`. | [0010](docs/adr/0010-przekazanie-projektu-ui-tokeny-dtcg.md) |
 
 ### 8.2 Pytania nadal otwarte
 
-Brak — wszystkie kluczowe decyzje na Etap 1 zostały podjęte. Nowe pytania dopisujemy tutaj w miarę rozwoju projektu.
+- **Etap 6:** czy `GET /api/metrics` ma być publiczny, czy za uwierzytelnianiem / tylko w sieci wewnętrznej (po Etapie 4.5 reszta API wymaga sesji) — decyzja w specu Etapu 6.
+
+Nowe pytania dopisujemy tutaj w miarę rozwoju projektu.

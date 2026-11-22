@@ -2,30 +2,23 @@ import { test, expect } from '@playwright/test'
 import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { EMPTY_PROFILE } from './helpers'
 
 /**
  * Czysto API-owy zestaw testów — odpowiednik kolekcji w Postmanie.
  *
  * Używa fixture `request` (APIRequestContext): wysyła żądania HTTP bez przeglądarki.
  * Ścieżki są względne (`/api/...`), więc lecą na baseURL z playwright.config.ts
- * (preview na :4173), a stamtąd proxy przekazuje je do backendu na :3001 —
+ * (preview na :4173), a stamtąd proxy przekazuje je do backendu E2E na :3101 —
  * dokładnie tak, jak robi to prawdziwa aplikacja.
  *
- * webServer w konfiguracji startuje backend + frontend automatycznie, więc
- * wystarczy: `npm run test:e2e`. Żeby odpalić tylko ten plik:
+ * Żądania idą z sesją użytkownika A (storageState z projektu `setup`).
+ * Całość uruchamia orkiestrator: `npm --prefix backend run test:e2e`. Żeby odpalić tylko ten plik:
  *   npx playwright test e2e/api.spec.ts
  */
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const avatarPng = readFileSync(path.join(__dirname, 'fixtures/avatar.png'))
-
-const EMPTY_PROFILE = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  aboutMe: '',
-  avatarUrl: '',
-}
 
 const validProfile = {
   firstName: 'Grażyna',

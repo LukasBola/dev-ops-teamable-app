@@ -26,7 +26,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Single worker everywhere: all specs share ONE backend instance (one
-     profile.json), so parallel files would race on the same mutable state.
+     database), so parallel files would race on the same mutable state.
      Suite is small and fast, so serializing costs nothing. */
   workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
@@ -52,10 +52,15 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    // Loguje A raz; pozostałe testy startują z jego sesją (e2e/.auth/user-a.json).
+    // Testy, które się wylogowują lub niszczą konto, robią to na własnej sesji/koncie.
+    { name: 'setup', testMatch: /auth\.setup\.ts/ },
     {
       name: 'chromium',
+      dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],
+        storageState: 'e2e/.auth/user-a.json',
       },
     },
     // {

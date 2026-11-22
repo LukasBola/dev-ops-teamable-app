@@ -2,6 +2,7 @@
 
 Projekt edukacyjny do nauki DevOps. Etap 1: frontend profilu użytkownika
 (Vue 3 + TypeScript + Tailwind). Etap 2: backend Express 5 + TypeScript + REST API.
+Etap 4.5: logowanie e-mailem i hasłem (Better Auth), prywatny profil każdego użytkownika.
 Szczegóły: `requirements.md` oraz `docs/superpowers/`.
 
 ## Struktura
@@ -22,13 +23,24 @@ make dev       # Mongo + migracje + backend (:3001) i frontend (:5173)
 
 `make dev` ogarnia całą sekwencję jedną komendą; Ctrl+C zatrzymuje oba serwery.
 `make help` wypisuje wszystkie zadania (`up`, `down`, `migrate`, `seed`, `e2e`, `test`, `clean`).
-Przy pierwszym `make up`/`dev` tworzony jest `backend/.env` z `backend/.env.example`
-(stąd skrypty czytają `MONGODB_URI` — bez ręcznego `export`).
+Przy pierwszym `make up`/`dev` powstają `backend/.env` i `.env` z plików `*.example`,
+z wygenerowanym `BETTER_AUTH_SECRET` (istniejących plików `make` nie rusza). Jeśli masz
+starszy `backend/.env` bez sekretu, backend odmówi startu z listą brakujących zmiennych —
+dopisz `BETTER_AUTH_SECRET=$(openssl rand -base64 32)` albo usuń plik i uruchom `make env`.
 
-**Trwałość danych:** profil żyje w wolumenie MongoDB (`teamable-mongo-data`), który
-przeżywa `make down`/`make up` — po `make dev` widzisz swoje ostatnio zapisane dane.
-`make dev` **nie** seeduje (nie nadpisuje profilu). Dane demo wstawisz świadomie
-przez `make seed`, a pełny reset bazy to `make clean` (usuwa wolumen).
+Po pierwszym starcie załóż sobie konto (rejestracji w aplikacji nie ma):
+
+```bash
+make user ARGS="create --email ty@example.com --password 'min-8-znakow'"
+```
+
+Logujesz się na http://localhost:5173. Jeśli w bazie był profil sprzed kont, pierwsze
+utworzone konto go przejmuje (CLI wypisze „Przejęto istniejący profil”).
+
+**Trwałość danych:** konta i profile żyją w wolumenie MongoDB (`teamable-mongo-data`), który
+przeżywa `make down`/`make up`. `make dev` **nie** seeduje. Konto demo
+(`DEMO_USER_EMAIL`/`DEMO_USER_PASSWORD` z `backend/.env`) zakłada `make seed`, a pełny reset
+bazy to `make clean` (usuwa wolumen).
 
 Ręcznie, w dwóch terminalach:
 
@@ -38,8 +50,8 @@ Ręcznie, w dwóch terminalach:
 | Backend (dev, port 3001) | `cd backend && npm install && npm run dev` |
 | Frontend (dev, port 5173, proxy /api → 3001) | `cd frontend && npm install && npm run dev` |
 
-Zmienne środowiskowe: patrz `backend/.env.example` (`PORT`, `PROFILE_DATA_DIR`, `MONGODB_URI`)
-i `frontend/.env.example` (`VITE_API_BASE_URL`; puste = same-origin przez proxy).
+Zmienne środowiskowe: patrz `backend/.env.example` (`PORT`, `PROFILE_DATA_DIR`, `MONGODB_URI`,
+`BETTER_AUTH_*`). Frontend nie ma zmiennych: API jest na tym samym originie (proxy Vite / nginx).
 Skrypty backendu ładują `backend/.env` automatycznie (Node `--env-file-if-exists`).
 
 Zdjęcie avatara trafia do `backend/data/uploads/` (gitignored); reszta profilu — do MongoDB.
@@ -74,12 +86,43 @@ npm run dev                          # backend na :3001
 ### Migracje
 - `npm run migrate:up` / `migrate:down` / `migrate:status` (wymaga `MONGODB_URI`).
 
+## Logowanie i konta (Etap 4.5)
+
+Logowanie e-mailem i hasłem obsługuje Better Auth (sesja w ciasteczku `HttpOnly`,
+`SameSite=Lax`). **Publicznej rejestracji nie ma** — konta zakłada, usuwa i resetuje im hasło
+właściciel z linii poleceń. Każdy użytkownik widzi i edytuje tylko swój profil.
+
+| Gdzie | Komenda |
+|-------|---------|
+| dev (Makefile) | `make user ARGS="create --email a@x.pl --password '…'"` |
+| dev (npm) | `npm --prefix backend run user -- create --email a@x.pl --password '…'` |
+| docker compose | `docker compose exec backend node dist/cli/user.js create --email a@x.pl --password '…'` |
+
+Komendy: `create` (hasło 8–128 znaków), `set-password` (unieważnia wszystkie sesje
+użytkownika), `delete` (usuwa konto, sesje, profil i avatar). Kod wyjścia: `0` OK,
+`1` błąd operacji, `2` złe użycie.
+
+Zmienne (`backend/.env` w dev, `.env` dla compose):
+
+- `BETTER_AUTH_SECRET` — wymagany, min. 32 znaki, **nigdy w repo** (`openssl rand -base64 32`).
+- `BETTER_AUTH_URL` — adres, pod którym przeglądarka widzi aplikację: dev `http://localhost:5173`,
+  compose `http://localhost:8080`. Żądania zmieniające dane z innego originu dostają 403.
+
+Warto wiedzieć:
+
+- Limit prób logowania działa w obrazie (`NODE_ENV=production`): po kilku nieudanych
+  próbach w ciągu 10 s odpowiedź to 429.
+- Przy starcie migracje zakładają unikalny indeks na e-mailu. Jeśli w bazie są duplikaty,
+  backend nie wystartuje i wypisze, który indeks i jaka wartość się powtarza.
+
 ## Docker (Etap 4)
 
 The whole app runs as a prod-like stack with one command (Docker Desktop must be running):
 
 ```bash
+make env                       # .env z wygenerowanym BETTER_AUTH_SECRET (raz)
 docker compose up --build      # mongo + backend + frontend (nginx)
+docker compose exec backend node dist/cli/user.js create --email ty@example.com --password '…'
 ```
 
 - Open the app at http://localhost:8080 — nginx serves the SPA and reverse-proxies `/api/` to the backend.

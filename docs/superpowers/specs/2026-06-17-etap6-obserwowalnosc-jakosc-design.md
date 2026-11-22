@@ -26,6 +26,18 @@ Cały ciężar edukacyjny jest po stronie DevOps, zgodnie z wierszem Etapu 6 w `
 | 41 | Coverage gate | **Vitest coverage** z progiem łamiącym CI (start ~70%, frontend + backend) | Realizacja „próg wprowadzimy stopniowo" z sekcji 6 requirements |
 | 42 | Analiza statyczna #1 | **CodeQL** (GitHub native) | Darmowe, zero infry, wynik w zakładce Security; naturalne dla GitHub Actions |
 | 43 | Analiza statyczna #2 | **SonarCloud** | Bogatsze metryki jakości (code smells, duplikacja, quality gate) obok bezpieczeństwa z CodeQL |
+| 49 | Analiza dynamiczna (DAST) | **OWASP ZAP baseline** w CI przeciw stackowi compose *(dodane 2026-11-22; numer po decyzjach #44–48 Etapu 4.5)* | CodeQL/SonarCloud czytają kod; ZAP atakuje działającą aplikację (nagłówki, ciasteczka, wycieki informacji) — inna klasa problemów, typowy element pipeline'u DevSecOps |
+
+## 0. Wymagania z Etapu 4.5 (uwierzytelnianie)
+
+> Dopisane 2026-11-22 po wdrożeniu Etapu 4.5 ([ADR-0001](../../adr/0001-better-auth.md)…[ADR-0009](../../adr/0009-e2e-auth-storagestate-sekrety-per-przebieg.md)). Po nim każdy endpoint `/api` poza `/api/health` i `/api/auth/*` wymaga sesji.
+
+- **Otwarta decyzja — `GET /api/metrics`:** publiczny (jak `/api/health`, wygodny dla Prometheusa w compose) czy dostępny tylko w sieci wewnętrznej / za uwierzytelnianiem. Metryki z etykietą ścieżki zdradzają strukturę API i natężenie ruchu [wniosek]. Do rozstrzygnięcia przy implementacji, z ADR-em; kierunek do rozważenia: endpoint montowany przed `requireAuth`, ale niewystawiony przez nginx (Prometheus scrapuje backend po sieci compose).
+- **pino — redakcja danych wrażliwych:** `redact` dla nagłówków `cookie`, `authorization`, `set-cookie` i pól `password` / `newPassword` w body. Logi żądań `/api/auth/*` nie mogą zawierać haseł ani tokenów sesji; test jednostkowy na redakcję.
+- **Audit log logowań:** udane i nieudane logowania, wylogowania, zmiany hasła i usunięcia kont (CLI) jako zdarzenia pino z `userId`/e-mailem, przez `databaseHooks` Better Auth (sesje) i wprost w CLI. Bez haseł.
+- **Metryki auth:** licznik nieudanych logowań i odpowiedzi 429 (limit prób) — sygnał ataku na hasła w Grafanie.
+- **Coverage gate:** progi 70% obejmują nowy kod auth (`backend/src/auth`, `middleware/requireAuth.ts`, `originCheck.ts`, `cli/`); CLI testowane bez procesu potomnego (`runUserCli`).
+- **OWASP ZAP (#49):** skan baseline bez logowania widzi tylko ekran logowania i publiczne endpointy. Do decyzji: czy skanować też jako zalogowany użytkownik (kontekst ZAP z sesją konta demo), czy zostać przy baseline.
 
 ## 1. Architektura i struktura repo
 
@@ -52,6 +64,8 @@ teamable/
     ci.yml                        # ZMIANA: coverage gate w jobach test
     codeql.yml                    # NOWY: analiza CodeQL
     sonarcloud.yml                # NOWY (lub job): analiza SonarCloud
+    zap.yml                       # NOWY: OWASP ZAP baseline (DAST) przeciw compose
+  .zap/rules.tsv                  # NOWY: progi reguł ZAP (IGNORE/WARN/FAIL)
   sonar-project.properties        # NOWY: konfiguracja SonarCloud
   requirements.md                 # ZMIANA: 2.4 link, decyzje Etap 6
 ```
@@ -236,6 +250,21 @@ sonarcloud:
 - **`SONAR_TOKEN`** w GitHub Secrets — jedyny wymagany sekret zewnętrzny tego etapu.
 - **Świadome nakładanie się z CodeQL** — CodeQL skupia się na bezpieczeństwie, SonarCloud na utrzymywalności; oba zostawione, by zobaczyć różnicę w praktyce.
 
+## 7a. OWASP ZAP baseline (DAST)
+
+*(Dodane 2026-11-22, po specu Etapu 4.5 — decyzja 49.)*
+
+- **Co:** pasywny skan ZAP w trybie *baseline* (spider + reguły pasywne, bez aktywnych ataków) przeciw działającej aplikacji. Wykrywa m.in. brak nagłówków bezpieczeństwa (CSP, `X-Content-Type-Options`, `X-Frame-Options`/`frame-ancestors`), atrybuty ciasteczek, ujawnianie wersji serwera (`Server: nginx/x.y`), komunikaty błędów z informacjami technicznymi.
+- **Gdzie:** osobny workflow `.github/workflows/zap.yml` — trigger: PR do `main`, push na `main`, `schedule` (raz w tygodniu) i `workflow_dispatch`.
+- **Jak:**
+  1. Build obrazów (jak w CI) lub pull z GHCR po SHA (zgodnie z Etapem 5 — build once).
+  2. `.env` generowany w jobie (`BETTER_AUTH_SECRET=$(openssl rand -base64 32)`, `BETTER_AUTH_URL=http://localhost:8080`), `docker compose up -d --wait`.
+  3. Akcja `zaproxy/action-baseline` (wersja **przypięta**, zweryfikowana przy implementacji) z `target: http://localhost:8080`, `rules_file_name: .zap/rules.tsv`, `cmd_options: '-a'`.
+  4. Raport HTML/JSON jako artefakt; `docker compose down -v` w `always()`.
+- **Zakres skanu:** bez logowania (widzi ekran logowania, statyki, publiczne `/api/health`, odpowiedzi 401 API). Skan uwierzytelniony (ZAP z sesją demo-usera) — poza zakresem; ewentualnie kolejny krok.
+- **Brama:** start w trybie **raportującym** (`fail_action: false`) — pierwszy przebieg pokaże stan wyjściowy; po naprawie znalezisk (paczka po review z issue #5: nagłówki bezpieczeństwa) reguły High/Medium w `rules.tsv` przełączone na `FAIL` → job czerwieni PR. Każda reguła `IGNORE` w `rules.tsv` ma komentarz z uzasadnieniem.
+- **Relacja do innych narzędzi:** CodeQL (SAST, kod), SonarCloud (jakość), testy E2E `security.spec.ts` z Etapu 4.5 (konkretne scenariusze auth/CSRF/IDOR) — ZAP uzupełnia je o szeroką, automatyczną kontrolę konfiguracji HTTP.
+
 ## 8. Strategia testów
 
 Strategia testów funkcjonalnych bez zmian (unit / integracyjne Testcontainers / E2E / smoke). Etap 6 dokłada **bramy jakości wokół** tych testów (coverage threshold) oraz **analizy statyczne** (CodeQL, SonarCloud) — nie nowe testy logiki, lecz automatyczną ocenę jakości kodu i pokrycia.
@@ -250,12 +279,13 @@ Lekki test instrumentacji: `GET /api/metrics` zwraca 200 i zawiera `http_request
 | **Metryki** | Sekcje 3–4: prom-client `/api/metrics`, Prometheus scrape, Grafana dashboard |
 | **Coverage gates** | Sekcja 5: progi Vitest łamiące build, lcov |
 | **Analiza statyczna** | Sekcje 6–7: CodeQL (bezpieczeństwo) + SonarCloud (utrzymywalność, quality gate) |
+| **Analiza dynamiczna (DAST)** | Sekcja 7a: OWASP ZAP baseline przeciw compose, raport → brama |
 
 ## 10. Zmiany w `requirements.md`
 
 - **Sekcja 2.4** — dodać wiersz z linkiem do tego specu (plan `_(w przygotowaniu)_`).
 - **Sekcja 6** — odnotować wprowadzenie twardego progu coverage (gate).
-- **Sekcja 8.1** — dodać blok **„Decyzje — Etap 6"** (tabela decyzji 38–43 z tego specu).
+- **Sekcja 8.1** — dodać blok **„Decyzje — Etap 6"** (tabela decyzji 38–43 i 49 z tego specu).
 
 ## 11. Definicja ukończenia — Etap 6
 
@@ -266,6 +296,7 @@ Lekki test instrumentacji: `GET /api/metrics` zwraca 200 i zawiera `http_request
 - [ ] Coverage gate (≥70% start) w Vitest dla frontend i backend; spadek łamie CI; raport lcov
 - [ ] CodeQL workflow (push/PR/schedule) — wyniki w zakładce Security
 - [ ] SonarCloud skan z quality gate; konsumuje lcov; `SONAR_TOKEN` w Secrets
+- [ ] ZAP baseline workflow (PR/push/schedule) przeciw compose; raport jako artefakt; `.zap/rules.tsv` z uzasadnionymi wyjątkami; po naprawie nagłówków — High/Medium jako `FAIL`
 - [ ] `requirements.md` zaktualizowane (2.4 link, sekcja 6, decyzje Etap 6)
 
 ## 12. Poza zakresem (świadomie odłożone)

@@ -30,8 +30,8 @@ const upload = multer({
 
 export const profileRouter = Router()
 
-profileRouter.get('/', async (_req, res) => {
-  res.json(await readProfile())
+profileRouter.get('/', async (req, res) => {
+  res.json(await readProfile(req.currentUser!.id))
 })
 
 profileRouter.put('/', async (req, res) => {
@@ -41,11 +41,11 @@ profileRouter.put('/', async (req, res) => {
     const emailIssue = failingPaths.length === 1 && failingPaths[0] === 'email'
     throw new HttpError(400, emailIssue ? 'Niepoprawny adres email' : 'Niepoprawne dane profilu')
   }
-  res.json(await writeProfile(parsed.data))
+  res.json(await writeProfile(req.currentUser!.id, parsed.data))
 })
 
-profileRouter.delete('/', async (_req, res) => {
-  await deleteProfile()
+profileRouter.delete('/', async (req, res) => {
+  await deleteProfile(req.currentUser!.id)
   res.status(204).end()
 })
 
@@ -53,12 +53,12 @@ profileRouter.post('/avatar', upload.single('avatar'), async (req, res) => {
   if (!req.file) throw new HttpError(400, 'Brak pliku')
   const ext = ALLOWED_TYPES[req.file.mimetype]
   if (!ext) throw new HttpError(400, 'Dozwolone tylko pliki graficzne')
-  const avatarUrl = await saveAvatar(req.file.buffer, ext)
+  const avatarUrl = await saveAvatar(req.currentUser!.id, req.file.buffer, ext)
   res.json({ avatarUrl })
 })
 
-profileRouter.get('/avatar', async (_req, res, next) => {
-  const avatarPath = await findAvatarPath()
+profileRouter.get('/avatar', async (req, res, next) => {
+  const avatarPath = await findAvatarPath(req.currentUser!.id)
   if (!avatarPath) throw new HttpError(404, 'Brak zdjęcia')
   // Pass dir as `root` + bare filename so sendFile's dotfiles:'ignore' check only
   // sees `avatar.png` — not a parent dir like `.claude/worktrees` that would 404.
