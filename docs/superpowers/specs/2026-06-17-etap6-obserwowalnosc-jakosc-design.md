@@ -299,6 +299,15 @@ Lekki test instrumentacji: `GET /api/metrics` zwraca 200 i zawiera `http_request
 - [ ] ZAP baseline workflow (PR/push/schedule) przeciw compose; raport jako artefakt; `.zap/rules.tsv` z uzasadnionymi wyjątkami; po naprawie nagłówków — High/Medium jako `FAIL`
 - [ ] `requirements.md` zaktualizowane (2.4 link, sekcja 6, decyzje Etap 6)
 
+## 11a. Dopisane z review Etapu 5 (do rozwinięcia przy rewizji tego specu)
+
+> Dopisane 2026-11-22 z review architektonicznego specu Etapu 5; backlog w `requirements.md` 2.5. Decyzje, numery i szczegóły zapadną przy brainstormingu Etapu 6.
+
+- **Skan obrazów Trivy** w CI, wynik SARIF do zakładki Security (obok CodeQL). Do ustalenia: czy podatność krytyczna blokuje push/wdrożenie.
+- **Przypinanie akcji GitHub po SHA + Dependabot `github-actions`** — ochrona łańcucha dostaw CI.
+- **Metryki DORA** (częstotliwość wdrożeń, lead time, odsetek nieudanych wdrożeń) liczone z Deployments API, które od Etapu 5 zapisuje wdrożenia dev/staging/production.
+- Etap 5 dostarcza reużywalny `deploy.yml`: skan OWASP ZAP (7a) może podnieść stack tym samym workflow.
+
 ## 12. Poza zakresem (świadomie odłożone)
 
 - Alerting (Alertmanager, powiadomienia) i SLO/error budgets.

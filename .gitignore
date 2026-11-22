@@ -30,3 +30,6 @@ frontend/e2e/.auth/
 # Graphify — commitujemy tylko graf (raport, HTML i cache budują się lokalnie)
 graphify-out/*
 !graphify-out/graph.json
+
+# Materiały lokalne (notatki, prezentacje do nauki) — poza repo
+temp/
