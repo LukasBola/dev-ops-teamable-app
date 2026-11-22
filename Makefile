@@ -10,11 +10,11 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose -f backend/docker-compose.yml
 
-.PHONY: help install env up down clean migrate seed user dev e2e test
+.PHONY: help install env up down clean migrate seed user dev e2e test graphify-setup
 
 help: ## Pokaż tę listę komend
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
+		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 install: ## Zainstaluj zależności (backend + frontend)
 	npm --prefix backend install
@@ -59,3 +59,9 @@ e2e: ## Pełne testy E2E (kontener Mongo + migrate + Playwright)
 test: ## Testy jednostkowe/integracyjne (backend wymaga Dockera)
 	npm --prefix backend test
 	npm --prefix frontend run test:unit -- --run
+
+graphify-setup: ## Zarejestruj merge driver grafu Graphify w tym klonie (raz na klon)
+	@PY="$$(sed -n '1s/^#!//p' "$$(command -v graphify)")"; \
+	git config merge.graphify.name "graphify graph.json union merge"; \
+	git config merge.graphify.driver "\"$$PY\" -m graphify merge-driver %O %A %B"; \
+	echo "merge driver graphify: $$PY"
