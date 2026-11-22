@@ -31,7 +31,7 @@ Narzędzie i skill instalujemy globalnie, w user scope (`uv tool install graphif
 
 - Zmiany w Markdown (specy, ADR-y) nie trafiają do grafu same. Trzeba uruchomić `/graphify --update` w Claude Code, który przepuszcza dokumenty przez model.
 - Hook przebudowuje graf także przy commitach bez zmian w kodzie, a ponowny clustering zmienia nazwy części społeczności.
-- Strict blokuje tylko pierwszy Read w sesji. Znacznik zapytania (`graphify-out/cache/last_query_stamp`, TTL 1800 s) jest wspólny dla projektu, więc zapytanie w dowolnej sesji zdejmuje blokadę na 30 minut. Grep i Bash dostają tylko podpowiedź.
+- Strict blokuje tylko pierwszy Read w sesji. Znacznik zapytania (`graphify-out/cache/last_query_stamp`, TTL 900 s, `GRAPHIFY_HOOK_STRICT_TTL` w `.claude/settings.json`; domyślnie 1800 s) jest wspólny dla projektu, więc zapytanie w dowolnej sesji zdejmuje blokadę na 15 minut. Grep i Bash dostają tylko podpowiedź.
 - Hook Claude Code działa „fail open”: bez `graphify` w PATH niczego nie wymusza (Claude Code pokazuje najwyżej nieblokujący błąd hooka).
 - Graf powstaje z drzewa roboczego, nie z indeksu: nazwy plików i identyfikatory z niezacommitowanych plików w `backend/` i `frontend/` mogą trafić do commita. Hook tylko ostrzega.
 - Commit z GUI, CI albo maszyny bez graphify pomija aktualizację (z komunikatem na stderr).
