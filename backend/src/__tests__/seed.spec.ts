@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import mongoose from 'mongoose'
 import { createApp } from '../app.js'
-import { seedDemoUser, DEMO_PROFILE } from '../services/seedProfile.js'
+import { seedDemoUser, DEMO_PROFILE } from '../auth/demoUser.js'
 import { findUserIdByEmail } from '../auth/users.js'
 import { readProfile } from '../services/profileStore.js'
 import { ProfileModel, LEGACY_PROFILE_ID } from '../models/Profile.js'

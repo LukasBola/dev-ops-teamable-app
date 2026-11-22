@@ -1,10 +1,5 @@
-import {
-  createCredentialUser,
-  findUserIdByEmail,
-  normalizeEmail,
-  setPassword,
-} from '../auth/users.js'
-import { writeProfile } from './profileStore.js'
+import { createCredentialUser, findUserIdByEmail, normalizeEmail, setPassword } from './users.js'
+import { writeProfile } from '../services/profileStore.js'
 
 export const DEMO_PROFILE = {
   firstName: 'Jan',

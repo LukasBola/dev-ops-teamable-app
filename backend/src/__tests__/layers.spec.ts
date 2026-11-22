@@ -14,4 +14,11 @@ describe('warstwy backendu: services', () => {
   it.each(serviceImports())('%s nie importuje z middleware (warstwa HTTP)', (_f, src) => {
     expect(src).not.toMatch(/from '\.\.\/middleware\//)
   })
+
+  it.each(serviceImports())(
+    '%s nie importuje z auth (konta są warstwą nad profilem)',
+    (_f, src) => {
+      expect(src).not.toMatch(/from '\.\.\/auth\//)
+    },
+  )
 })

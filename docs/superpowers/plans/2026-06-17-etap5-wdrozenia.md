@@ -23,7 +23,7 @@
 
 ## File Structure
 
-- `backend/src/services/seedProfile.ts` — **modyfikacja**: dodać `shouldSeedOnStart(env)` (czysta, testowalna funkcja decyzji).
+- `backend/src/auth/demoUser.ts` — **modyfikacja**: dodać `shouldSeedOnStart(env)` (czysta, testowalna funkcja decyzji).
 - `backend/src/__tests__/seed.spec.ts` — **modyfikacja**: testy `shouldSeedOnStart`.
 - `backend/src/index.ts` — **modyfikacja**: po `connectDb()` warunkowo wywołać `seedDemoProfile()`.
 - `docker-compose.deploy.yml` — **nowy**: stack z `image:` (GHCR), parametryzowany env varami.
@@ -36,21 +36,21 @@
 ### Task 1: Backend konsumuje `SEED_ON_START`
 
 **Files:**
-- Modify: `backend/src/services/seedProfile.ts`
+- Modify: `backend/src/auth/demoUser.ts`
 - Test: `backend/src/__tests__/seed.spec.ts`
 - Modify: `backend/src/index.ts`
 
 **Interfaces:**
 - Consumes: `seedDemoProfile()` (istnieje), `connectDb()`/`disconnectDb()` z `./db/connection.js`.
-- Produces: `shouldSeedOnStart(env?: NodeJS.ProcessEnv): boolean` — eksportowana z `seedProfile.ts`; `true` wtw. gdy `env.SEED_ON_START === 'true'`.
+- Produces: `shouldSeedOnStart(env?: NodeJS.ProcessEnv): boolean` — eksportowana z `demoUser.ts`; `true` wtw. gdy `env.SEED_ON_START === 'true'`.
 
 - [ ] **Step 1: Dopisz failing test dla `shouldSeedOnStart`**
 
-W `backend/src/__tests__/seed.spec.ts` dodaj (góra pliku zawiera już import z `../services/seedProfile.js`; rozszerz import o `shouldSeedOnStart`):
+W `backend/src/__tests__/seed.spec.ts` dodaj (góra pliku zawiera już import z `../auth/demoUser.js`; rozszerz import o `shouldSeedOnStart`):
 
 ```ts
 import { describe, it, expect } from 'vitest'
-import { shouldSeedOnStart } from '../services/seedProfile.js'
+import { shouldSeedOnStart } from '../auth/demoUser.js'
 
 describe('shouldSeedOnStart', () => {
   it('zwraca true gdy SEED_ON_START === "true"', () => {
@@ -77,7 +77,7 @@ Expected: FAIL — `shouldSeedOnStart is not a function` / brak eksportu.
 
 - [ ] **Step 3: Zaimplementuj `shouldSeedOnStart`**
 
-W `backend/src/services/seedProfile.ts` dodaj na końcu pliku:
+W `backend/src/auth/demoUser.ts` dodaj na końcu pliku:
 
 ```ts
 // Decyzja środowiskowa (Etap 5): dev/staging seedują, prod startuje czysty.
@@ -98,7 +98,7 @@ W `backend/src/index.ts` zmień importy i `main()`:
 ```ts
 import { createApp } from './app.js'
 import { connectDb, disconnectDb } from './db/connection.js'
-import { seedDemoProfile, shouldSeedOnStart } from './services/seedProfile.js'
+import { seedDemoProfile, shouldSeedOnStart } from './auth/demoUser.js'
 
 const port = Number(process.env.PORT ?? 3001)
 
@@ -124,7 +124,7 @@ Expected: PASS — type-check czysty, wszystkie testy (w tym integracyjne Testco
 - [ ] **Step 7: Commit**
 
 ```bash
-git add backend/src/services/seedProfile.ts backend/src/__tests__/seed.spec.ts backend/src/index.ts
+git add backend/src/auth/demoUser.ts backend/src/__tests__/seed.spec.ts backend/src/index.ts
 git commit -m "feat(backend): honor SEED_ON_START env flag on bootstrap"
 ```
 
