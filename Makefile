@@ -9,7 +9,7 @@ SHELL := /bin/bash
 
 COMPOSE := docker compose -f backend/docker-compose.yml
 
-.PHONY: help install env up down clean migrate seed dev e2e test
+.PHONY: help install env up down clean migrate seed user dev e2e test
 
 help: ## Pokaż tę listę komend
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -34,8 +34,11 @@ clean: ## Zatrzymaj MongoDB i usuń dane (wolumen)
 migrate: up ## Zastosuj migracje bazy
 	npm --prefix backend run migrate:up
 
-seed: up ## Wstaw profil demo (UWAGA: nadpisuje bieżący profil danymi demo)
+seed: migrate ## Konto demo z DEMO_USER_EMAIL/DEMO_USER_PASSWORD (backend/.env); ponowny seed resetuje mu hasło i profil
 	npm --prefix backend run seed
+
+user: migrate ## Konta: make user ARGS="create|delete|set-password --email a@x.pl [--password ...]"
+	npm --prefix backend run user -- $(ARGS)
 
 dev: up migrate ## Start: Mongo + migracje + backend (:3001) i frontend (:5173). Dane z bazy zostają.
 	@echo ">> backend http://localhost:3001  |  frontend http://localhost:5173   (Ctrl+C zatrzymuje oba)"

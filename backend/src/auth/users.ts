@@ -1,14 +1,15 @@
 import { z } from 'zod'
 import { getAuth, PASSWORD_LENGTH } from './auth.js'
+import { deleteProfile, writeProfile } from '../services/profileStore.js'
 
 const emailSchema = z.email()
 const passwordSchema = z.string().min(PASSWORD_LENGTH.min).max(PASSWORD_LENGTH.max)
 
-const normalize = (email: string) => email.trim().toLowerCase()
+export const normalizeEmail = (email: string) => email.trim().toLowerCase()
 const ctx = () => getAuth().$context
 
 export async function findUserIdByEmail(email: string): Promise<string | null> {
-  const found = await (await ctx()).internalAdapter.findUserByEmail(normalize(email))
+  const found = await (await ctx()).internalAdapter.findUserByEmail(normalizeEmail(email))
   return found?.user.id ?? null
 }
 
@@ -23,7 +24,7 @@ export async function createCredentialUser(input: {
   password: string
   name?: string
 }): Promise<{ id: string; email: string }> {
-  const email = emailSchema.parse(normalize(input.email))
+  const email = emailSchema.parse(normalizeEmail(input.email))
   const password = passwordSchema.parse(input.password)
   const { internalAdapter, password: hasher } = await ctx()
 
@@ -42,8 +43,11 @@ export async function createCredentialUser(input: {
       accountId: user.id,
       password: hash,
     })
+    // FR-9: nowe konto ma pusty profil z e-mailem kontaktowym = e-mail logowania.
+    await writeProfile(user.id, { firstName: '', lastName: '', email, aboutMe: '' })
   } catch (err) {
-    // Brak transakcji - sprzątamy ręcznie, żeby nie zostawić usera bez konta.
+    // Brak transakcji - sprzątamy ręcznie, żeby nie zostawić usera bez konta lub konta bez usera.
+    await internalAdapter.deleteAccounts(user.id)
     await internalAdapter.deleteUser(user.id)
     throw err
   }
@@ -61,6 +65,7 @@ export async function deleteUser(email: string): Promise<void> {
   const userId = await requireUserId(email)
   const { internalAdapter } = await ctx()
   await internalAdapter.deleteUserSessions(userId)
+  await deleteProfile(userId) // FR-19: profil i avatar
   await internalAdapter.deleteAccounts(userId)
   await internalAdapter.deleteUser(userId)
 }

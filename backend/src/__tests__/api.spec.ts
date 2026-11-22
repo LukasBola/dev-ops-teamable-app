@@ -22,6 +22,10 @@ afterEach(async () => {
   await fs.rm(dataDir, { recursive: true, force: true })
 })
 
+// FR-9 (Etap 4.5): nowe konto ma pusty profil poza e-mailem kontaktowym.
+const freshProfile = (email: string) => ({ ...EMPTY_PROFILE, email })
+const ANNA_FRESH = freshProfile('anna@example.com')
+
 const validBody = {
   firstName: 'Anna',
   lastName: 'Nowak',
@@ -30,10 +34,10 @@ const validBody = {
 }
 
 describe('GET /api/profile', () => {
-  it('zwraca pusty profil na czystym stanie (FR-9)', async () => {
+  it('nowe konto: pusty profil z e-mailem kontaktowym = e-mail logowania (FR-9)', async () => {
     const res = await request(app).get('/api/profile').set('Cookie', cookie)
     expect(res.status).toBe(200)
-    expect(res.body).toEqual(EMPTY_PROFILE)
+    expect(res.body).toEqual(ANNA_FRESH)
   })
 
   it('test kontraktowy: odpowiedź ma dokładnie pola Profile', async () => {
@@ -67,7 +71,7 @@ describe('PUT /api/profile', () => {
     expect(res.body).toEqual({ error: 'Niepoprawny adres email' })
 
     const get = await request(app).get('/api/profile').set('Cookie', cookie)
-    expect(get.body).toEqual(EMPTY_PROFILE) // nic nie zapisano
+    expect(get.body).toEqual(ANNA_FRESH) // nic nie zapisano
   })
 
   it('akceptuje pusty email (FR-9)', async () => {
@@ -226,7 +230,7 @@ describe('autoryzacja', () => {
     const b = await createUserAndSignIn(app, 'bartek@example.com')
 
     expect((await request(app).get('/api/profile').set('Cookie', b.cookie)).body).toEqual(
-      EMPTY_PROFILE,
+      freshProfile('bartek@example.com'),
     )
     expect((await request(app).get('/api/profile/avatar').set('Cookie', b.cookie)).status).toBe(404)
     const a = await request(app).get('/api/profile').set('Cookie', cookie)
@@ -242,9 +246,7 @@ describe('autoryzacja', () => {
       .send(validBody)
     expect(res.status).toBe(403)
     expect(res.body).toEqual({ error: 'Niedozwolony origin' })
-    expect((await request(app).get('/api/profile').set('Cookie', cookie)).body).toEqual(
-      EMPTY_PROFILE,
-    )
+    expect((await request(app).get('/api/profile').set('Cookie', cookie)).body).toEqual(ANNA_FRESH)
   })
 
   it('PUT z własnym Origin → 200', async () => {
@@ -270,7 +272,7 @@ describe('autoryzacja', () => {
     expect(res.status).toBe(200)
     expect(res.body.avatarUrl).toBe('')
     expect((await request(app).get('/api/profile').set('Cookie', b.cookie)).body).toEqual(
-      EMPTY_PROFILE,
+      freshProfile('bartek@example.com'),
     )
   })
 
@@ -280,8 +282,6 @@ describe('autoryzacja', () => {
       .set('Cookie', cookie)
       .send({ ...validBody, firstName: { $gt: '' } })
     expect(res.status).toBe(400)
-    expect((await request(app).get('/api/profile').set('Cookie', cookie)).body).toEqual(
-      EMPTY_PROFILE,
-    )
+    expect((await request(app).get('/api/profile').set('Cookie', cookie)).body).toEqual(ANNA_FRESH)
   })
 })

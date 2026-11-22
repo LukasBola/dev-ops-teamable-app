@@ -13,12 +13,13 @@ const DEFAULT_DATA_DIR = path.resolve(moduleDir, '../../data')
 function dataDir(): string {
   return process.env.PROFILE_DATA_DIR || DEFAULT_DATA_DIR
 }
+export const uploadsRoot = () => path.join(dataDir(), 'uploads')
 const USER_ID = /^[A-Za-z0-9_-]{1,64}$/
 
 /** Katalog avatara użytkownika; id spoza wzorca (np. `../etc`) nie może wyjść poza uploads. */
 export function userUploadsDir(userId: string): string {
   if (!USER_ID.test(userId)) throw new HttpError(400, 'Niepoprawny identyfikator użytkownika')
-  return path.join(dataDir(), 'uploads', userId)
+  return path.join(uploadsRoot(), userId)
 }
 
 // --- Map Mongo document -> Profile contract (without _id) ---
