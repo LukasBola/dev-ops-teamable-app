@@ -224,7 +224,9 @@ make graphify-setup         # merge driver dla graph.json (raz na klon)
 - Graf aktualizuje się sam w `pre-commit` (tylko kod, bez LLM) i trafia do tego samego commita.
 - Po zmianach w dokumentach (`docs/`, `requirements.md`, README): `/graphify --update` w Claude Code.
 - Pominięcie aktualizacji: `GRAPHIFY_SKIP_HOOK=1 git commit ...`.
-- Konflikt na grafie: `rm graphify-out/graph.json && graphify update . && git add graphify-out/graph.json`.
+- Konflikt na grafie (np. bez `make graphify-setup`): `git checkout --theirs graphify-out/graph.json && graphify update . && git add graphify-out/graph.json`. Zachowuje część z dokumentów; `rm graph.json` zbudowałby graf tylko z kodu.
+- Przy rozjechanym grafie mergujemy lokalnie: przycisk merge i „Update branch” na GitHubie nie używają merge drivera.
+- Graf powstaje z drzewa roboczego: przed commitem nie trzymaj nieśledzonych plików w `backend/` i `frontend/` (hook ostrzega).
 - Agent musi odpytać graf (`graphify query "..."`) przed pierwszym odczytem pliku w sesji (`GRAPHIFY_HOOK_STRICT=1` w `.claude/settings.json`).
 - Podgląd: `open graphify-out/graph.html` (lokalny, niecommitowany).
 

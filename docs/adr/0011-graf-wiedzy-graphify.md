@@ -24,7 +24,7 @@ Narzędzie i skill instalujemy globalnie, w user scope (`uv tool install graphif
 
 **Pozytywne**
 
-- Graf na `main` zawsze pasuje do kodu z tego samego commita.
+- Część kodowa grafu pasuje do commita, jeśli commit powstał z zainstalowanym graphify i czystym drzewem roboczym (wyjątki niżej).
 - Commit bez `graphify` w PATH (CI, GUI, świeży klon) przechodzi, a hook pomija aktualizację.
 
 **Negatywne / koszty**
@@ -32,11 +32,14 @@ Narzędzie i skill instalujemy globalnie, w user scope (`uv tool install graphif
 - Zmiany w Markdown (specy, ADR-y) nie trafiają do grafu same. Trzeba uruchomić `/graphify --update` w Claude Code, który przepuszcza dokumenty przez model.
 - Hook przebudowuje graf także przy commitach bez zmian w kodzie, a ponowny clustering zmienia nazwy części społeczności.
 - Strict blokuje tylko pierwszy Read w sesji. Znacznik zapytania (`graphify-out/cache/last_query_stamp`, TTL 1800 s) jest wspólny dla projektu, więc zapytanie w dowolnej sesji zdejmuje blokadę na 30 minut. Grep i Bash dostają tylko podpowiedź.
-- Hook Claude Code działa „fail open”: bez `graphify` w PATH niczego nie wymusza i nie zgłasza błędu.
+- Hook Claude Code działa „fail open”: bez `graphify` w PATH niczego nie wymusza (Claude Code pokazuje najwyżej nieblokujący błąd hooka).
+- Graf powstaje z drzewa roboczego, nie z indeksu: nazwy plików i identyfikatory z niezacommitowanych plików w `backend/` i `frontend/` mogą trafić do commita. Hook tylko ostrzega.
+- Commit z GUI, CI albo maszyny bez graphify pomija aktualizację (z komunikatem na stderr).
+- Merge: driver robi unię obu stron bez wspólnej bazy, więc węzły usunięte na jednej gałęzi mogą wrócić, aż następny commit przebuduje graf. `pre-merge-commit` nie pomaga, bo git zapisuje drzewo merge commita przed hookiem. Przycisk merge na GitHubie i „Update branch” nie używają drivera, więc przy rozjechanym grafie mergujemy lokalnie.
 
 **Niewiadome**
 
-- Zachowanie merge drivera przy realnym konflikcie gałęzi: jeszcze niesprawdzone.
+- Rozstrzygnięte 2026-11-22: merge dwóch gałęzi z nowymi plikami kodu przeszedł bez konfliktu, a graf w merge commicie zawiera węzły z obu stron (test niżej).
 
 ## Dowody
 
@@ -47,3 +50,6 @@ Narzędzie i skill instalujemy globalnie, w user scope (`uv tool install graphif
 - test 2026-11-22 – commit z PATH bez `graphify`: przeszedł; `GRAPHIFY_SKIP_HOOK=1`: hook pominięty
 - test 2026-11-22 – `claude -p` z Read na `backend/src/app.ts`: odmowa „graphify strict mode: … Run `graphify query` … FIRST”; przy świeżym znaczniku zapytania tylko podpowiedź
 - `graphify/cli.py` (`_run_hook_guard`, `_query_stamp_fresh`) w graphifyy 0.9.115 – warunki blokady
+- `10c71bf` + następny commit – wspólny `.husky/graphify-update.sh` (ostrzeżenia, `|| exit 1`), `graphify-setup` przerywa bez graphify; `pre-merge-commit` dodany i usunięty po teście
+- test 2026-11-22 – `git merge --no-ff` gałęzi z `probeA.ts` do gałęzi z `probeB.ts`: „Auto-merging graphify-out/graph.json”, merge commit zawiera oba węzły; przebudowa z `pre-merge-commit` została tylko w indeksie
+- przegląd gałęzi 2026-11-22 – test: nieśledzony plik w `backend/src/` dał węzły w commitowanym grafie

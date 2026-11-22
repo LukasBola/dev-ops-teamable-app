@@ -1,4 +1,4 @@
-# Aktualizacja grafu Graphify (tylko kod, bez LLM) dla pre-commit i pre-merge-commit.
+# Aktualizacja grafu Graphify (tylko kod, bez LLM) w pre-commit. Nie w pre-merge-commit: git zapisuje drzewo merge commita przed hookiem, więc `git add` z hooka zostałby tylko w indeksie.
 # Hooki husky, a nie `graphify hook install`: husky ustawia core.hooksPath, więc hooki z .git/hooks się nie uruchamiają.
 # Bez zmian staged poza grafem — nic do zrobienia.
 [ -n "$(git diff --cached --name-only -- . ':!graphify-out/graph.json')" ] || exit 0
