@@ -34,6 +34,6 @@ Piszemy ADR, gdy decyzja spełnia **co najmniej jeden** warunek:
 | [0007](0007-jeden-sterownik-mongodb.md) | Jedna wersja sterownika `mongodb` (wersja z mongoose) | Zaakceptowany |
 | [0008](0008-ui-identyfikator-tokeny-fonty.md) | UI „Identyfikator”: tokeny w `@theme`, fonty lokalnie | Zaakceptowany |
 | [0009](0009-e2e-auth-storagestate-sekrety-per-przebieg.md) | E2E auth: projekt `setup`, sekrety na przebieg, kontrprzykłady | Zaakceptowany |
-| [0010](0010-przekazanie-projektu-ui-tokeny-dtcg.md) | Przekazanie projektu UI: tokeny DTCG, makieta, zrzuty | Proponowany |
+| [0010](0010-przekazanie-projektu-ui-tokeny-dtcg.md) | Przekazanie projektu UI: tokeny DTCG, makieta, zrzuty | Zaakceptowany |
 
 Bez osobnych ADR-ów (świadomie): `ENV NODE_ENV=production` w obrazie (konsekwencja ADR-0001, opisana tam), wzorzec `userUploadsDir` (część ADR-0005), wybór skilli do projektowania UI (proces, nie architektura).
