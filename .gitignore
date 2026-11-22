@@ -23,6 +23,7 @@ test-results/
 
 .claude/*
 !.claude/memory/
+!.claude/settings.json
 # Sesje Playwright (E2E) — tokeny z przebiegu testów
 frontend/e2e/.auth/
 
