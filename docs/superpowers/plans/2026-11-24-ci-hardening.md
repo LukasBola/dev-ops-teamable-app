@@ -182,18 +182,20 @@ Konfigurację przyjął GitHub: po merge'u Dependabot otworzył PR-y #13–#21 (
 
 Zmiany w konfiguracji: osobny PR `ci/dependabot-tuning`.
 
+Wynik po przejściu na Node 24 (#24): grupa minor-patch, przebudowana przez Dependabota na nowym `main` (#28, 30 aktualizacji), przechodzi wszystkie joby. Przestarzała wersja #27 (baza sprzed #24) została zamknięta.
+
 ## Dalsze kroki (poza tym PR-em)
 
-- [ ] **Node 20 → 24 LTS:** `ci.yml` (`node-version`), oba Dockerfile (`node:24-alpine`), `@types/node` 24. Decyzja o runtime → ADR. Odblokowuje #15.
+Każda pozycja ma teraz swoje issue i miejsce na tablicy [Teamable — rozwój](https://github.com/users/LukasBola/projects/1). Szczegóły i kryteria akceptacji są w issue.
 
-- [ ] **Ustawienia repo (właściciel):**
-  - ruleset na `main` (wymagany PR, wymagane checki z aplikacji GitHub Actions, blokada force-push i usuwania);
-  - Dependabot alerts;
-  - „Allow select actions” z wymogiem pełnego SHA, włączone **po** merge'u tego PR-a, inaczej CI na `main` padnie.
-- [ ] **Spec Etapu 5 / ADR-0013:** `COSIGN_*` przenieść z sekretów repo do Environment z branch policy (osobny job `sign` na `main`) albo zostawić tylko podpis keyless. Weryfikacja keyless już przypina tożsamość `ci.yml@refs/heads/main`.
-- [ ] **Backlog `requirements.md` 2.5 na gałęzi Etapu 5:** wiersz „Przypinanie akcji GitHub po SHA + Dependabot” oznaczyć jako zrealizowany.
-- [ ] **Opcjonalnie:** zizmor jako job w CI (akcja przypięta do SHA).
-- [ ] **Konto właściciela:**
-  - token `gh` z zakresem `repo` na wszystkie repozytoria → rozważyć fine-grained PAT;
-  - passkey;
-  - przegląd sesji, OAuth Apps i kluczy.
+- [x] **Node 20 → 24 LTS:** #24, ADR-0014 (Zaakceptowany w #29).
+- [ ] **Ochrona repo:** ruleset na `main` i „Allow select actions” z wymogiem pełnego SHA: #26.
+- [ ] **Dependabot alerts:** #32.
+- [ ] **`concurrency` w `ci.yml`** (wyścig o `latest` z 2026-11-24): #30.
+- [ ] **Sprzątanie gałęzi** i automatyczne usuwanie po merge'u: #31.
+- [ ] **Obrazy bazowe przypięte do digestu:** #33.
+- [ ] **Konflikty `graph.json` w PR-ach** (rewizja ADR-0011): #34.
+- [ ] **TypeScript 7** (czeka na typescript-eslint): #36.
+- [ ] **zizmor w CI** (opcjonalnie): #37.
+- [ ] **Konto właściciela** (PAT, passkey, przegląd): #38.
+- [ ] **Spec Etapu 5 / ADR-0013:** klucz cosign w environment albo tylko keyless, plus oznaczenie backlogu „Przypinanie akcji po SHA” jako zrealizowanego: #40 (epik Etapu 5: #39).
