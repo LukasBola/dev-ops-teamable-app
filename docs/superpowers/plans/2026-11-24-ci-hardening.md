@@ -113,12 +113,24 @@ Wpis `package-ecosystem: npm` dla `directories: [/, /backend, /frontend]`:
 - `cooldown.default-days: 7`, czyli nowe wydanie czeka tydzień (ochrona przed świeżo przejętymi wersjami paczek);
 - commity `chore(deps)` / `chore(deps-dev)` (`prefix: chore`, `include: scope`).
 
-`ignore`:
-- `better-auth` w całości: ta sama dokładna wersja w obu pakietach. Podbicie per katalog rozjechałoby wersje, a `group-by: dependency-name` daje osobny PR na każdą paczkę.
-- `mongodb` minor/major: zakres idzie za mongoose (ADR-0007).
+Przypięte wersje (pierwsza pasująca grupa wygrywa):
+- `better-auth`: grupa z `group-by: dependency-name`, czyli jeden PR dla `backend/` i `frontend/` naraz.
+- `mongo` (`mongoose`, `mongodb`): podbijane razem, bo zakres `mongodb` idzie za mongoose (ADR-0007). Gdy `mongodb` wyprzedza mongoose, test każe poczekać.
+- Pierwsza wersja wyłączała obie paczki przez `ignore`. Użytkownik zapytał o automatyzację, więc `ignore` zastąpiły grupy i test `pinnedDeps.spec.ts` (Step 4b).
 
 Run: walidacja `ajv` względem schematu SchemaStore `dependabot-2.0.json` (YAML → JSON przez `ruby`).
-Wynik: `SCHEMA VALID`. `better-auth` występuje tylko w `backend/` i `frontend/`, a `mongodb` tylko w `backend/`, więc `ignore` pokrywa wszystkie miejsca.
+Wynik: `SCHEMA VALID`. Połączenia grupy z `group-by` z innymi grupami dokumentacja nie pokazuje wprost. Opisuje tylko `group-by` jako parametr pojedynczej grupy i kolejność dopasowania. [do potwierdzenia po merge'u: Insights → Dependency graph → Dependabot]
+
+- [x] **Step 4b: Test spójności przypiętych wersji**
+
+Create: `backend/src/__tests__/pinnedDeps.spec.ts`. Czyta `package.json` i `package-lock.json` (bez uruchamiania npm):
+- `better-auth` ma tę samą wersję zadeklarowaną i zablokowaną w lockfile we frontendzie i backendzie;
+- w lockfile backendu jest dokładnie jedna kopia `mongodb`. Komunikat błędu podaje zakres wymagany przez mongoose.
+
+Kod backendu nie importuje `mongodb` bezpośrednio, więc duplikat nie musi wyjść w `type-check`. Test łapie go na poziomie lockfile.
+
+Run: `npx vitest run src/__tests__/pinnedDeps.spec.ts`. Najpierw na obecnym stanie, potem z tymczasowo zepsutym stanem (cofanym przez `git checkout`).
+Wynik: GREEN 2/2. RED 1 (frontend `better-auth` 1.7.26): „zaktualizuj better-auth w obu package.json do tej samej wersji”. RED 2 (zagnieżdżone `mongoose/node_modules/mongodb@7.3.0`): „mongoose wymaga mongodb ~7.3: ustaw ten zakres w backend/package.json…”. Lint, prettier i `type-check` OK.
 
 - [x] **Step 5: `CLAUDE.md`**
 

@@ -23,15 +23,17 @@ updates:
     # Nowe wydanie czeka 7 dni: przejęte wersje paczek npm zwykle są wykrywane i wycofywane w ciągu kilku dni.
     cooldown:
       default-days: 7
+    # Grupy dopasowuje kolejno (pierwsza wygrywa). Spójność wersji pilnuje backend/src/__tests__/pinnedDeps.spec.ts.
     groups:
+      # Ta sama dokładna wersja we frontendzie i backendzie: jeden PR dla obu katalogów.
+      better-auth:
+        patterns: [better-auth]
+        group-by: dependency-name
+      # mongodb idzie za zakresem z mongoose (ADR-0007): podbijane razem; gdy mongodb wyprzedza mongoose, test każe poczekać.
+      mongo:
+        patterns: [mongoose, mongodb]
       minor-patch:
         update-types: [minor, patch]
-    ignore:
-      # Ta sama dokładna wersja we frontendzie i backendzie: podbijamy ręcznie oba naraz.
-      - dependency-name: better-auth
-      # Zakres idzie za mongoose (ADR-0007); podbicie minor/major bez mongoose daje dwie kopie sterownika.
-      - dependency-name: mongodb
-        update-types: ['version-update:semver-minor', 'version-update:semver-major']
     commit-message:
       prefix: chore
       prefix-development: chore
