@@ -1,6 +1,6 @@
 # ADR-0014: Node.js 24 LTS jako runtime w CI, obrazach Docker i typach
 
-- **Status:** Proponowany
+- **Status:** Zaakceptowany
 - **Retrospektywny:** nie
 - **Data decyzji:** 2026-11-24 (źródło: analiza pierwszych PR-ów Dependabota, #15 i #18)
 - **Data spisania:** 2026-11-24
@@ -59,3 +59,6 @@ Major `@types/node` podbijamy razem z runtime'em, dlatego Dependabot go pomija (
   - frontend i backend: lint, prettier, `type-check`, testy z coverage (backend 115/115), build — OK;
   - `docker build` obu obrazów na `node:24-alpine` OK, w obrazie działa v24.22.3;
   - e2e 73/74. `SEC-3` pada tak samo na Node 20 i tylko lokalnie na macOS, w CI przechodzi.
+- `205416d` (PR #24, merge `e6ce248`): `node-version: 24` w `ci.yml`, `node:24-alpine` w obu Dockerfile, `engines.node: ">=24"`, `@types/node` 24 w backendzie.
+- [CI run 45499497618](https://github.com/LukasBola/dev-ops-teamable-app/actions/runs/45499497618) na `main` (`e6ce248`): frontend, backend, e2e (74 passed) i docker zielone; obrazy wypchnięte jako `:e6ce248`.
+- PR #28 (Dependabot, grupa minor-patch, 30 aktualizacji, baza `e6ce248`): wszystkie joby zielone na Node 24. Ta sama grupa na Node 20 (#15) padała na `undici` 8.
