@@ -19,8 +19,8 @@ Projekt edukacyjny do nauki DevOps: profil członka zespołu (Vue 3 + Express 5 
 ## Stos
 
 - **Frontend** (`frontend/`): Vue 3 + TypeScript, Vite, Tailwind CSS 4 (tokeny w `@theme`), Better Auth client. Testy: Vitest + Vue Test Utils, E2E Playwright. Lint: oxlint + ESLint, Prettier.
-- **Backend** (`backend/`): Node 20 (ESM), Express 5, TypeScript, Better Auth, Mongoose + `mongodb`, multer (avatar), Zod (env i wejście API), migrate-mongo. Testy: Vitest + Testcontainers (MongoDB).
-- **Infrastruktura:** Docker multi-stage (backend: `node:20-alpine`, frontend: nginx), `docker-compose.yml` w korzeniu (pełny stack, :8080), `backend/docker-compose.yml` (sama Mongo do dev), GitHub Actions (`.github/workflows/ci.yml`), obrazy w GHCR (tag SHA + `latest` z `main`).
+- **Backend** (`backend/`): Node 24 LTS (ESM), Express 5, TypeScript, Better Auth, Mongoose + `mongodb`, multer (avatar), Zod (env i wejście API), migrate-mongo. Testy: Vitest + Testcontainers (MongoDB).
+- **Infrastruktura:** Docker multi-stage (backend: `node:24-alpine`, frontend: nginx), `docker-compose.yml` w korzeniu (pełny stack, :8080), `backend/docker-compose.yml` (sama Mongo do dev), GitHub Actions (`.github/workflows/ci.yml`), obrazy w GHCR (tag SHA + `latest` z `main`).
 - **Narzędzia repo:** Husky + lint-staged + commitlint, Makefile, Graphify.
 
 ## Struktura
@@ -43,7 +43,7 @@ frontend/e2e/  # Playwright (projekt setup + storageState)
 
 ## Komendy
 
-Wszystko z korzenia repo przez `make` (`make help` wypisuje listę). Wymaga Node 20.6+ i Dockera.
+Wszystko z korzenia repo przez `make` (`make help` wypisuje listę). Wymaga Node 24+ (ADR-0014) i Dockera.
 
 | Cel | Komenda |
 |---|---|
