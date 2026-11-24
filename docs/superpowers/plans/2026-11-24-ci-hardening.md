@@ -106,6 +106,20 @@ Wynik: YAML poprawny, `top={}`, `frontend/backend/e2e={contents: read}`, `docker
 
 `package-ecosystem: github-actions`, `directory: /`, `interval: weekly`, jedna grupa `actions` (`patterns: ['*']`), `commit-message.prefix: ci`. Składnię sprawdziłem w dokumentacji GitHuba przez Context7 (`/github/docs`, `dependabot-options-reference.md`, `customizing-dependabot-prs.md`).
 
+- [x] **Step 4a: Dependabot dla npm** (dopisane na prośbę użytkownika, ten sam PR)
+
+Wpis `package-ecosystem: npm` dla `directories: [/, /backend, /frontend]`:
+- co tydzień, grupa `minor-patch` (`update-types: [minor, patch]`): jeden PR na katalog, a wersje major w osobnych PR-ach;
+- `cooldown.default-days: 7`, czyli nowe wydanie czeka tydzień (ochrona przed świeżo przejętymi wersjami paczek);
+- commity `chore(deps)` / `chore(deps-dev)` (`prefix: chore`, `include: scope`).
+
+`ignore`:
+- `better-auth` w całości: ta sama dokładna wersja w obu pakietach. Podbicie per katalog rozjechałoby wersje, a `group-by: dependency-name` daje osobny PR na każdą paczkę.
+- `mongodb` minor/major: zakres idzie za mongoose (ADR-0007).
+
+Run: walidacja `ajv` względem schematu SchemaStore `dependabot-2.0.json` (YAML → JSON przez `ruby`).
+Wynik: `SCHEMA VALID`. `better-auth` występuje tylko w `backend/` i `frontend/`, a `mongodb` tylko w `backend/`, więc `ignore` pokrywa wszystkie miejsca.
+
 - [x] **Step 5: `CLAUDE.md`**
 
 W sekcji „Sposób pracy → CI” jedno zdanie z regułami i obejściem dla zależności, która wymaga skryptu instalacyjnego (`npm rebuild <pakiet>`).

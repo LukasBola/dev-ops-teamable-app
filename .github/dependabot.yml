@@ -10,3 +10,29 @@ updates:
         patterns: ['*']
     commit-message:
       prefix: ci
+
+  # Paczki npm: korzeń (narzędzia repo), backend, frontend. Na katalog co tydzień jeden PR z minor+patch;
+  # major osobno, bo zwykle wymaga zmian w kodzie.
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /backend
+      - /frontend
+    schedule:
+      interval: weekly
+    # Nowe wydanie czeka 7 dni: przejęte wersje paczek npm zwykle są wykrywane i wycofywane w ciągu kilku dni.
+    cooldown:
+      default-days: 7
+    groups:
+      minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Ta sama dokładna wersja we frontendzie i backendzie: podbijamy ręcznie oba naraz.
+      - dependency-name: better-auth
+      # Zakres idzie za mongoose (ADR-0007); podbicie minor/major bez mongoose daje dwie kopie sterownika.
+      - dependency-name: mongodb
+        update-types: ['version-update:semver-minor', 'version-update:semver-major']
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
