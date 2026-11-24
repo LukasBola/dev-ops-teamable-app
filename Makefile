@@ -1,7 +1,7 @@
 # Teamable — lokalne uruchomienie i zadania dev.
 # `make` lub `make help` wypisuje dostępne komendy.
 #
-# Wymaga: Node 20.6+ (flaga --env-file-if-exists), Docker (MongoDB + testy).
+# Wymaga: Node 24+ (LTS, ADR-0014), Docker (MongoDB + testy).
 # MONGODB_URI, BETTER_AUTH_* itp. czytane są z backend/.env, a docker compose czyta .env —
 # oba tworzy `make env` z plików *.example, z wygenerowanym sekretem.
 

@@ -342,6 +342,14 @@ Od tego etapu pełna treść decyzji (kontekst, opcje, konsekwencje, dowody) jes
 |---|-------|---------|-----|
 | 55 | Graf wiedzy | Graphify: commitowany `graphify-out/graph.json` z merge driverem, aktualizacja w husky pre-commit, strict guard dla agenta. | [0011](docs/adr/0011-graf-wiedzy-graphify.md) |
 
+#### Decyzje — runtime
+
+| # | Temat | Decyzja | ADR |
+|---|-------|---------|-----|
+| 59 | Runtime Node.js | Node 24 LTS w CI (`node-version: 24`), obrazach (`node:24-alpine`), `engines` i `@types/node` 24; Node 20 bez wsparcia od 04.2026. | [0014](docs/adr/0014-runtime-node-24.md) |
+
+Numery 56–58 (i ADR-0012, ADR-0013) rezerwuje spec Etapu 5 na gałęzi `docs/etap5-spec-rewrite`, stąd przeskok 55 → 59.
+
 ### 8.2 Pytania nadal otwarte
 
 - **Etap 6:** czy `GET /api/metrics` ma być publiczny, czy za uwierzytelnianiem / tylko w sieci wewnętrznej (po Etapie 4.5 reszta API wymaga sesji) — decyzja w specu Etapu 6.
