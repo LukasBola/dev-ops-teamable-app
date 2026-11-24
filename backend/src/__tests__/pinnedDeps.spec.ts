@@ -13,16 +13,18 @@ type Lock = {
 
 describe('przypięte wersje zależności', () => {
   it('better-auth: ta sama dokładna wersja we frontendzie i backendzie', () => {
-    const declared = ['backend', 'frontend'].map(
-      (p) => json(`${p}/package.json`).dependencies['better-auth'],
-    )
-    const locked = ['backend', 'frontend'].map(
-      (p) => (json(`${p}/package-lock.json`) as Lock).packages['node_modules/better-auth']?.version,
-    )
+    const declared = ['backend', 'frontend'].map((p) => {
+      const range = json(`${p}/package.json`).dependencies['better-auth']
+      const locked = (json(`${p}/package-lock.json`) as Lock).packages['node_modules/better-auth']
+      // Deklaracja równa wersji z lockfile wymusza dokładne przypięcie: zakres (np. ^1.7.27) nie przejdzie.
+      expect(range, `${p}: better-auth musi być przypięty dokładnie do wersji z lockfile`).toBe(
+        locked?.version,
+      )
+      return range
+    })
     expect(declared[0], 'zaktualizuj better-auth w obu package.json do tej samej wersji').toBe(
       declared[1],
     )
-    expect(locked[0], 'lockfile backendu i frontendu mają różne better-auth').toBe(locked[1])
   })
 
   it('mongodb: jedna kopia sterownika w backendzie, zgodna z mongoose (ADR-0007)', () => {
