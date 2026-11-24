@@ -1,0 +1,40 @@
+version: 2
+updates:
+  # Akcje w ci.yml są przypięte do SHA z komentarzem wersji; Dependabot podbija oba naraz.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
+
+  # Paczki npm: korzeń (narzędzia repo), backend, frontend. Na katalog co tydzień jeden PR z minor+patch;
+  # major osobno, bo zwykle wymaga zmian w kodzie.
+  - package-ecosystem: npm
+    directories:
+      - /
+      - /backend
+      - /frontend
+    schedule:
+      interval: weekly
+    # Nowe wydanie czeka 7 dni: przejęte wersje paczek npm zwykle są wykrywane i wycofywane w ciągu kilku dni.
+    cooldown:
+      default-days: 7
+    # Grupy dopasowuje kolejno (pierwsza wygrywa). Spójność wersji pilnuje backend/src/__tests__/pinnedDeps.spec.ts.
+    groups:
+      # Ta sama dokładna wersja we frontendzie i backendzie: jeden PR dla obu katalogów.
+      better-auth:
+        patterns: [better-auth]
+        group-by: dependency-name
+      # mongodb idzie za zakresem z mongoose (ADR-0007): podbijane razem; gdy mongodb wyprzedza mongoose, test każe poczekać.
+      mongo:
+        patterns: [mongoose, mongodb]
+      minor-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
