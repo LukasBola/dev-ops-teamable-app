@@ -8,12 +8,13 @@
 
 **Goal:** Ograniczyć, co może ukraść albo zrobić kod wykonany w GitHub Actions (złośliwy workflow, podmieniona akcja, skrypt instalacyjny zależności), zanim Etap 5 doda do repo sekrety (cosign) i Environments.
 
-**Architecture:** Bez nowych jobów i bez nowych narzędzi. Pięć zmian w istniejących plikach:
+**Architecture:** Bez nowych jobów i bez nowych narzędzi. Sześć zmian:
 1. `permissions: {}` na poziomie workflow, a każdy job prosi o swoje uprawnienia.
 2. Akcje przypięte do pełnego SHA z komentarzem wersji.
-3. Dependabot dla `github-actions`, żeby przypięte SHA się nie starzały.
+3. Dependabot dla `github-actions` (przypięte SHA się nie starzeją) i dla npm (`/`, `backend/`, `frontend/`, z karencją 7 dni i grupami dla przypiętych wersji).
 4. `persist-credentials: false` w checkoutach.
 5. `npm ci --ignore-scripts` w CI i w obu Dockerfile.
+6. Test `backend/src/__tests__/pinnedDeps.spec.ts` pilnuje przypiętych wersji (`better-auth`, `mongodb`), które Dependabot podbija.
 
 **Tech Stack:** GitHub Actions, Dependabot, npm 10+, Docker (multi-stage, `node:20-alpine`).
 
@@ -28,7 +29,7 @@
 - **Gałąź:** `ci/harden-workflows` od `main`, PR #12.
 - **Bez zmiany zachowania akcji:** SHA = obecne tagi wersji głównych (sprawdzone: `commits/vN` == `commits/vN.x.y`). Podbicia wersji głównych proponuje Dependabot w osobnych PR-ach.
 - **Bez nowych zależności i akcji.** zizmor (statyczna analiza workflow) zostaje na później: osobna akcja w CI to kolejny element łańcucha dostaw.
-- **Bez ADR-a:** zmiany łatwo odwrócić i widać je w kodzie, to krok procesu (reguły z `CLAUDE.md`). Reguły trafiają do `CLAUDE.md`, sekcja CI.
+- **Bez ADR-a:** zmiany łatwo odwrócić i widać je w kodzie, to krok procesu (reguły z `CLAUDE.md`). Reguły trafiają do `CLAUDE.md`, sekcja CI. ADR-0007 bez zmian: decyzja (jedna kopia `mongodb`, zakres jak w mongoose) obowiązuje, a test `pinnedDeps.spec.ts` tylko automatyzuje opisane w nim ręczne sprawdzanie `npm ls mongodb`.
 - **Ustawienia repo poza zakresem PR-a** (ruleset, Dependabot alerts, lista akcji): to ręczne kroki właściciela, opisane w „Dalsze kroki”.
 
 ## Review Focus
@@ -153,7 +154,9 @@ W sekcji „Sposób pracy → CI” jedno zdanie z regułami i obejściem dla za
 - [x] **Step 1: PR #12, oba przebiegi (push i pull_request)**
 
 Run: `gh pr checks 12 --watch`
-Wynik: `frontend`, `backend`, `e2e` i `docker` zielone w obu przebiegach. E2E na `ubuntu-24.04`: **74 passed (1.1m)**. W logach: `persist-credentials: false`, `npm ci --ignore-scripts`, a w buildzie Dockera `RUN npm ci --omit=dev --ignore-scripts`.
+Wynik dla `e55af0c` (workflow i Dockerfile): `frontend`, `backend`, `e2e` i `docker` zielone w obu przebiegach. E2E na `ubuntu-24.04`: **74 passed (1.1m)**. W logach: `persist-credentials: false`, `npm ci --ignore-scripts`, a w buildzie Dockera `RUN npm ci --omit=dev --ignore-scripts`.
+
+Wynik dla `1a307bb` (Dependabot npm + `pinnedDeps.spec.ts`): wszystkie joby zielone w obu przebiegach. W jobie `backend`: `✓ src/__tests__/pinnedDeps.spec.ts (2 tests)`. E2E: **74 passed (1.0m)**.
 
 ---
 
