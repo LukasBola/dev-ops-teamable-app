@@ -22,12 +22,12 @@
     ]
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.0.2",
+    "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.0.2",
-    "eslint": "^10.2.1",
+    "eslint": "^10.15.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.7",
-    "oxlint": "^1.60.0",
-    "prettier": "^3.8.3"
+    "lint-staged": "^17.6.1",
+    "oxlint": "^1.94.0",
+    "prettier": "^3.10.1"
   }
 }
