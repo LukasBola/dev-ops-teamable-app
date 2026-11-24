@@ -1,0 +1,6 @@
+[shell_environment_policy]
+inherit = "core"
+
+[shell_environment_policy.set]
+GRAPHIFY_HOOK_STRICT = "1"
+GRAPHIFY_HOOK_STRICT_TTL = "300"
