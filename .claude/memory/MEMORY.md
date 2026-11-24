@@ -1,1 +1,3 @@
-- [tsgo breaks Vue plugin](tsgo-breaks-vue-plugin.md) — tsgo enabled globally → `.vue` imports show ts(2307) in editor; fix via useTsgo:false- [No auto worktrees](no-auto-worktrees.md) — teamable: work on regular branches, worktree only on explicit request
+- [tsgo breaks Vue plugin](tsgo-breaks-vue-plugin.md) — tsgo enabled globally → `.vue` imports show ts(2307) in editor; fix via useTsgo:false
+- [No auto worktrees](no-auto-worktrees.md) — teamable: work on regular branches, worktree only on explicit request
+- [Etap 5 CD status](etap5-cd-status.md) — parked; CI hardening PR #12 first (2026-11-24); resume with cosign-key, push/PR and execution-method questions
