@@ -167,7 +167,24 @@ Wynik dla `1a307bb` (Dependabot npm + `pinnedDeps.spec.ts`): wszystkie joby ziel
 - **Hook graphify buduje graf z drzewa roboczego,** więc do `graph.json` trafił też nieśledzony `docs/prompts/security_scan.md`. To znane ograniczenie (`shortcut:` w `.husky/graphify-update.sh`).
 - **Push rulesets (ochrona ścieżek, np. `.github/workflows/**`) są niedostępne dla tego repo.** Dokumentacja GitHuba: tylko repozytoria „private or internal”.
 
+## Po wdrożeniu: pierwszy przebieg Dependabota (2026-11-24)
+
+Konfigurację przyjął GitHub: po merge'u Dependabot otworzył PR-y #13–#21 (grupy `actions`, `mongo`, `minor-patch` oraz osobne PR-y dla wersji major).
+
+| PR | Co | CI | Wniosek |
+|---|---|---|---|
+| #13 | akcje (wersje major) | ✅ | zmergowany |
+| #14 | `mongodb` 7.2→7.9 + `mongoose` 9.12.2 | ❌ `type-check` (dwie kopie sterownika) | mongoose 9.12.2 chce `~7.8`, a Dependabot bierze najnowsze `mongodb`. Grupa `mongo` sama tego nie rozwiąże: `ignore` dla minor/major `mongodb`, a #14 poprawiony ręcznie na `~7.8` |
+| #15 | minor-patch, 29 aktualizacji | ❌ testy backendu | `testcontainers` 12.2.1 → `undici` 8 wymaga Node ≥ 22.19. CI działa na Node 20 (bez wsparcia od 2026-04-30) → osobna decyzja o Node 24 |
+| #16, #20 | `typescript` 7 | ❌ | typescript-eslint nie wspiera TS 7 → `ignore` dla major (`shortcut:`) |
+| #17, #19 | `@types/node` 26 | ✅ | typy nowsze niż runtime (Node 20) → `ignore` dla major, podbijamy razem z Node |
+| #18, #21 | `vitest` 5 | ❌ `npm ci` (ERESOLVE) | `@vitest/coverage-v8` musi mieć wersję `vitest` → grupa `vitest` (`vitest`, `@vitest/*`) |
+
+Zmiany w konfiguracji: osobny PR `ci/dependabot-tuning`.
+
 ## Dalsze kroki (poza tym PR-em)
+
+- [ ] **Node 20 → 24 LTS:** `ci.yml` (`node-version`), oba Dockerfile (`node:24-alpine`), `@types/node` 24. Decyzja o runtime → ADR. Odblokowuje #15.
 
 - [ ] **Ustawienia repo (właściciel):**
   - ruleset na `main` (wymagany PR, wymagane checki z aplikacji GitHub Actions, blokada force-push i usuwania);
