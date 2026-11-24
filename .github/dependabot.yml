@@ -29,11 +29,24 @@ updates:
       better-auth:
         patterns: [better-auth]
         group-by: dependency-name
-      # mongodb idzie za zakresem z mongoose (ADR-0007): podbijane razem; gdy mongodb wyprzedza mongoose, test każe poczekać.
+      # mongoose i patche mongodb razem. Gdy nowy mongoose zmieni zakres mongodb, test w PR-ze poda zakres do ustawienia.
       mongo:
         patterns: [mongoose, mongodb]
+      # @vitest/coverage-v8 musi mieć dokładnie tę samą wersję co vitest.
+      vitest:
+        patterns: [vitest, '@vitest/*']
       minor-patch:
         update-types: [minor, patch]
+    ignore:
+      # Zakres idzie za mongoose (ADR-0007): najnowszy minor mongodb zwykle wyprzedza mongoose i daje dwie kopie sterownika.
+      - dependency-name: mongodb
+        update-types: ['version-update:semver-minor', 'version-update:semver-major']
+      # Typy Node trzymamy na wersji major runtime'u (CI i Docker); podbijamy je razem z Node.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      # shortcut: typescript-eslint nie wspiera TS 7 („does not support TS 7.0”, PR #16/#20, 2026-11-24), zdjąć, gdy wesprze
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: chore
       prefix-development: chore
