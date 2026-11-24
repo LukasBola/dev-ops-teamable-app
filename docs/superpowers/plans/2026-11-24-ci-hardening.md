@@ -125,7 +125,7 @@ Wynik: `SCHEMA VALID`. Połączenia grupy z `group-by` z innymi grupami dokument
 - [x] **Step 4b: Test spójności przypiętych wersji**
 
 Create: `backend/src/__tests__/pinnedDeps.spec.ts`. Czyta `package.json` i `package-lock.json` (bez uruchamiania npm):
-- `better-auth` ma tę samą wersję zadeklarowaną i zablokowaną w lockfile we frontendzie i backendzie;
+- `better-auth`: w każdym pakiecie deklaracja w `package.json` jest równa wersji z lockfile, co wymusza dokładne przypięcie (zakres `^1.7.27` nie przejdzie), i obie deklaracje są takie same. Pierwsza wersja testu porównywała tylko deklaracje między sobą i lockfile'y między sobą, więc przepuszczała `^1.7.27` w obu pakietach. Wykrył to review Copilota w PR #12 i dodaliśmy porównanie z lockfile;
 - w lockfile backendu jest dokładnie jedna kopia `mongodb`. Komunikat błędu podaje zakres wymagany przez mongoose.
 
 Kod backendu nie importuje `mongodb` bezpośrednio, więc duplikat nie musi wyjść w `type-check`. Test łapie go na poziomie lockfile.
