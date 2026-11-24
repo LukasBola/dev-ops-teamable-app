@@ -86,7 +86,7 @@ Złamanie któregoś psuje coś po cichu. Szczegóły i uzasadnienie w podlinkow
 - **Git:** GitHub Flow — krótka gałąź od `main` (`git switch -c feat/...`), PR do `main`. Bez worktree, chyba że użytkownik o niego poprosi. Commituj i pushuj tylko na prośbę.
 - **Commity:** Conventional Commits (`feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`), wymuszane przez commitlint. Pre-commit uruchamia lint-staged i aktualizację grafu.
 - **Etap = spec → plan → wdrożenie.** Nowy etap zaczyna się od specu (brainstorming) i planu w `docs/superpowers/`; po wdrożeniu zaktualizuj `requirements.md` (2.4 linki, 8.1 decyzje, status dokumentu) i README, jeśli zmienia się uruchomienie.
-- **CI** (`ci.yml`): frontend i backend (lint, format, typy, testy z coverage, build) → e2e → obrazy Docker (push do GHCR tylko z `main`). Job e2e jest przypięty do `ubuntu-24.04` (Playwright nie obsługuje Chromium na 26.04) — zdejmij po podbiciu Playwrighta.
+- **CI** (`ci.yml`): frontend i backend (lint, format, typy, testy z coverage, build) → e2e → obrazy Docker (push do GHCR tylko z `main`). Job e2e jest przypięty do `ubuntu-24.04` (Playwright nie obsługuje Chromium na 26.04) — zdejmij po podbiciu Playwrighta. Hardening: `permissions: {}` na poziomie workflow (job prosi o swoje), akcje przypięte do pełnego SHA z komentarzem wersji (podbija Dependabot, `.github/dependabot.yml`), `persist-credentials: false`, `npm ci --ignore-scripts` w CI i Dockerfile — nowa zależność wymagająca skryptu instalacyjnego musi to obejść jawnie (np. `npm rebuild <pakiet>`).
 - **Skróty z ograniczeniem** oznaczamy komentarzem `shortcut: <ograniczenie>, <kiedy poprawić>`.
 
 ## Decyzje architektoniczne (ADR)
