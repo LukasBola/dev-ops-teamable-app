@@ -1,6 +1,6 @@
 # Etap 5 — Wdrożenia na środowiska (dev/staging/prod) — projekt techniczny
 
-> **Data:** 2026-06-17 · **Rewizja:** 2026-11-22 (po Etapie 4.5, refaktorze warstw backendu i review architektonicznym)
+> **Data:** 2026-06-17 · **Rewizja:** 2026-11-22 (po Etapie 4.5, refaktorze warstw backendu i review architektonicznym) · 2026-11-27 (po hardeningu CI: klucz cosign w środowisku `signing`, osobny job `sign`, sekrety do `deploy.yml` po nazwie, akcje przypięte do SHA)
 > **Status:** zatwierdzony 2026-11-22 (gotowy do planu implementacji)
 > **Źródło wymagań:** [../../../requirements.md](../../../requirements.md) (Etap 5 w sekcji 2.3, cele CD w 7.3, backlog w 2.5)
 > **Decyzje:** [ADR-0012](../../adr/0012-promocja-obrazu-reuzywalny-deploy.md), [ADR-0013](../../adr/0013-podpisy-obrazow-cosign.md) (oba Proponowane) + tabela poniżej
@@ -34,7 +34,7 @@ Promocja, podpisy, Environments i smoke test zostają bez zmian [wniosek].
 | Production wdrażana z tagu niezależnie od wyniku staging | Job `check-staging`: produkcja rusza tylko, gdy staging dla tego SHA ma status `success` (Deployments API) | Promocja ma być wymuszona przez pipeline, a nie tylko zapisana w dokumencie; zamyka też wyścig przebiegów main/tag |
 | Na tagu job `docker` buduje obrazy bez push | Na tagu: re-tag obrazu `:<sha>` → `:vX.Y.Z` bez rebuildu | Rebuild niczego nie dowodzi; etykieta wersji w GHCR wskazuje ten sam digest |
 | Deploy po etykiecie `:<sha>` | Deploy po digeście (`@sha256:…`) rozwiązanym z `:<sha>`, digest w podsumowaniu joba | Etykietę da się nadpisać („Re-run" przebiegu main buduje inne bajty); podpis dotyczy digestu |
-| Brak podpisów obrazów | cosign: podpis keyless (OIDC/Sigstore) **i** kluczem; deploy weryfikuje oba | Decyzja użytkownika; [ADR-0013](../../adr/0013-podpisy-obrazow-cosign.md) |
+| Brak podpisów obrazów | cosign: podpis keyless (OIDC/Sigstore) **i** kluczem w osobnym jobie `sign` (środowisko `signing`, tylko `main`); deploy weryfikuje oba | Decyzja użytkownika; klucz poza sekretami repo, bo te czyta workflow z każdej gałęzi; [ADR-0013](../../adr/0013-podpisy-obrazow-cosign.md) |
 | Compose bez zmiennych auth | `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DEMO_USER_*`, `SEED_ON_START` w compose | Bez nich backend nie startuje (walidacja Zod, ADR-0004) |
 | Seed przez `npm run seed` (Etap 3) | `SEED_ON_START=true` → backend wywołuje `seedDemoUser()` przy starcie | Obraz nie ma `tsx` ani `scripts/seed.ts`; seed to dziś konto demo z `auth/demoUser.ts` |
 | `LOG_LEVEL` per środowisko w Etapie 5 | Przeniesione do Etapu 6 (decyzja 38, pino) | Backend nie ma loggera; zmienna bez konsumenta tylko udaje różnicę między środowiskami |
@@ -52,11 +52,11 @@ Promocja, podpisy, Environments i smoke test zostają bez zmian [wniosek].
 - Ten sam obraz (ten sam digest) przechodzi dev → staging → production; wdrożenie nigdy nie buduje.
 - `main` wdraża dev, potem staging (staging tylko po zielonym dev); tag `v*` wdraża production tylko wtedy, gdy staging dla tego commita był zielony, i po ręcznym zatwierdzeniu.
 - Każdy obraz z `main` jest podpisany dwa razy (keyless + kluczem); wdrożenie odmawia uruchomienia obrazu bez obu ważnych podpisów.
-- Konfiguracja i sekrety wyłącznie w GitHub Environments (sekrety podpisu kluczem: w sekretach repo); różnice środowisk tylko przez zmienne.
+- Konfiguracja i sekrety wyłącznie w GitHub Environments (klucz podpisu w środowisku `signing`); żadnych sekretów w sekretach repo; różnice środowisk tylko przez zmienne.
 - Smoke test po każdym wdrożeniu; błąd czerwieni job i zatrzymuje promocję.
 - Release: etykieta `vX.Y.Z` na obrazach i GitHub Release z notatkami z commitów.
 
-**Nie-cele (Etap 5):** realny hosting i trwałe środowiska, rollback/blue-green/canary, Vault/SOPS, CDN, logi/metryki. Odłożone pomysły z przypisanymi etapami są w backlogu `requirements.md` 2.5 (m.in. Trivy, pinning akcji, DORA → Etap 6; Kubernetes + GitOps, atestacje, rollback, release-please → Etap 7).
+**Nie-cele (Etap 5):** realny hosting i trwałe środowiska, rollback/blue-green/canary, Vault/SOPS, CDN, logi/metryki. Odłożone pomysły z przypisanymi etapami są w backlogu `requirements.md` 2.5 (m.in. Trivy, DORA → Etap 6; Kubernetes + GitOps, atestacje, rollback, release-please → Etap 7).
 
 **Anty-cele** (porażka, nawet jeśli pipeline jest zielony):
 
@@ -105,7 +105,7 @@ Numery z `requirements.md` 8.1. Rewizja zmienia 31–37 i dodaje 56–58.
 | 35 | Flagi runtime | `SEED_ON_START` per środowisko. `LOG_LEVEL` → Etap 6 (decyzja 38). |
 | 36 | Izolacja środowisk | Compose project `teamable_<env>`, port 8081/8082/8083, własny `BETTER_AUTH_URL`, `concurrency` per środowisko. |
 | 37 | Smoke test | Health, SPA, `/api/profile` bez sesji → 401, logowanie z poprawnym originem i złym hasłem → 401; dev/staging dodatkowo logowanie demo → profil 200. |
-| 56 | Podpisy obrazów | cosign: keyless (OIDC GitHub → Sigstore) i kluczem (para kluczy, prywatny w sekretach repo); deploy weryfikuje oba. ([ADR-0013](../../adr/0013-podpisy-obrazow-cosign.md)) |
+| 56 | Podpisy obrazów | cosign: keyless (OIDC GitHub → Sigstore) i kluczem (para kluczy, prywatny w sekretach środowiska `signing` z branch policy `main`); podpisuje osobny job `sign`; deploy weryfikuje oba. ([ADR-0013](../../adr/0013-podpisy-obrazow-cosign.md)) |
 | 57 | Release | Tag `vX.Y.Z` → re-tag obrazów bez rebuildu → (po wdrożeniu prod) `gh release create --generate-notes`. |
 | 58 | Kubernetes + GitOps | Osobny **Etap 7** (Kubernetes + Argo CD); Etap 5 zostaje przy Compose. |
 
@@ -116,7 +116,7 @@ backend/src/env.ts                 # ZMIANA: SEED_ON_START (+ wymóg DEMO_USER_*
 backend/src/index.ts               # ZMIANA: seed po connectDb(), przed listen()
 backend/src/__tests__/env.spec.ts  # ZMIANA: testy SEED_ON_START
 docker-compose.deploy.yml          # NOWY: stack z image: (GHCR po digeście), bez build:
-.github/workflows/ci.yml           # ZMIANA: docker (digest, podpisy, re-tag), check-staging, deploy-*, release
+.github/workflows/ci.yml           # ZMIANA: docker (digest), sign, tag-release, check-staging, deploy-*, release
 .github/workflows/deploy.yml       # NOWY: reużywalny workflow wdrożenia (workflow_call)
 scripts/smoke-test.sh              # NOWY: smoke po wdrożeniu
 cosign.pub                         # NOWY: klucz publiczny do weryfikacji podpisu kluczem
@@ -178,13 +178,15 @@ volumes: { mongo-data: {}, uploads: {} }
 | `staging` | `FRONTEND_PORT=8082`, `BETTER_AUTH_URL=http://localhost:8082`, `SEED_ON_START=true`, `DEMO_USER_EMAIL` | `BETTER_AUTH_SECRET`, `DEMO_USER_PASSWORD` | deployment branch policy: `main` |
 | `production` | `FRONTEND_PORT=8083`, `BETTER_AUTH_URL=http://localhost:8083`, `SEED_ON_START=false` | `BETTER_AUTH_SECRET` | tylko tagi `v*`; required reviewers |
 
-Sekrety repozytorium (nie środowisk, bo podpisuje job `docker`): `COSIGN_PRIVATE_KEY`, `COSIGN_PASSWORD`. Klucz publiczny `cosign.pub` w repo.
+| `signing` | — | `COSIGN_PRIVATE_KEY`, `COSIGN_PASSWORD` | deployment branch policy: `main`; bez obejścia przez admina |
+
+Sekretów repozytorium nie używamy: widzi je workflow uruchomiony z każdej gałęzi, także zmieniony w PR-ze albo przez atakującego (tak działała kampania wfx-loot). Klucz cosign siedzi w środowisku `signing`, które przyjmuje tylko joby z `main`, więc gałąź z dopisanym `run: echo $COSIGN_PRIVATE_KEY` dostaje odmowę po stronie GitHuba. Klucz publiczny `cosign.pub` w repo.
 
 - `BETTER_AUTH_SECRET` inny w każdym środowisku (`openssl rand -base64 32`): wspólny sekret oznaczałby, że sesja z dev jest ważna na produkcji [wniosek].
 - `BETTER_AUTH_URL` jest jednocześnie adresem smoke testu, więc niespójność z `FRONTEND_PORT` wyjdzie od razu.
 - Realny host wymaga `https` w `BETTER_AUTH_URL` (ciasteczko sesji przez `http` w sieci publicznej da się podsłuchać) [wniosek]. Na `localhost` w jobie `http` wystarcza.
 - Branch policy, a nie tylko `if:` w YAML: każda gałąź może zmienić `ci.yml` i odwołać się do `environment: staging`; polityka środowiska odrzuci taki job po stronie GitHuba.
-- `secrets: inherit` przekazuje też wszystkie sekrety repo (w tym `COSIGN_*`) do `deploy.yml`, który ich nie używa [wniosek: akceptowalne w projekcie jednej osoby; alternatywa — przekazywanie po nazwie].
+- Sekrety do `deploy.yml` przekazujemy **po nazwie**, nie `secrets: inherit`. Wywołujący i tak musi je przekazać, a po nazwie da się przekazać także sekret istniejący tylko w środowisku; nieprzekazany sekret środowiska rozwija się w wywołanym workflow do pustego napisu bez błędu, dlatego `BETTER_AUTH_SECRET` ma `required: true` w `on.workflow_call.secrets` (dokumentacja GitHub Actions „Reuse workflows”, sprawdzone 2026-11-27). `inherit` przekazałby wszystko, do czego wywołujący ma dostęp.
 - Konfigurację Environments zakłada się ręcznie w Settings → Environments (lub `gh api`); kroki w README. **Environments z sekretami muszą istnieć przed merge'em PR-a z CD** — job odwołujący się do nieistniejącego środowiska tworzy je puste i pada na `${BETTER_AUTH_SECRET:?}`.
 - Required reviewer na `production`: właściciel repo (jedyne konto); samodzielne zatwierdzenie dozwolone (bez „Prevent self-review") — decyzja wykonawcza, w zespole włączylibyśmy tę opcję.
 
@@ -192,7 +194,9 @@ Sekrety repozytorium (nie środowisk, bo podpisuje job `docker`): `COSIGN_PRIVAT
 
 **`ci.yml` — job `docker` (zmiany)**:
 
-- Na `main`: build + push jak dziś; z outputu `digest` każdego obrazu podpis cosign **keyless** (`permissions: id-token: write`) i **kluczem** (`COSIGN_PRIVATE_KEY`/`COSIGN_PASSWORD` z env, klucz przez `env://`, nigdy w argumentach) — oba po digeście `obraz@sha256:…`.
+- Na `main`: build + push jak dziś; `digest` każdego obrazu wystawiony jako output joba. Job `docker` nie dostaje `id-token: write` ani sekretów.
+
+**`ci.yml` — job `sign` (nowy, tylko `main`)**: `needs: docker`, `environment: signing`, `permissions: { contents: read, packages: write, id-token: write }`. Dla digestów z outputu `docker` podpis cosign **keyless** i **kluczem** (`COSIGN_PRIVATE_KEY`/`COSIGN_PASSWORD` z env, klucz przez `env://`, nigdy w argumentach), oba po digeście `obraz@sha256:…`. Tożsamość certyfikatu keyless pochodzi z `job_workflow_ref` (`ci.yml@refs/heads/main`), środowisko jej nie zmienia [wniosek: do potwierdzenia w pierwszym przebiegu weryfikacją w `deploy.yml`].
 - Na tagu `v*`: zamiast build — re-tag `:<sha>` → `:<tag>` dla obu obrazów **bez zmiany digestu** (narzędzie do potwierdzenia w planie: `docker buildx imagetools create` albo `crane tag`; kryterium: digest `:<tag>` == digest `:<sha>`, sprawdzane w jobie). Brak `:<sha>` (commit spoza `main`) → błąd.
 - Na innych gałęziach i PR: build bez push, jak dziś.
 
@@ -201,11 +205,13 @@ Sekrety repozytorium (nie środowisk, bo podpisuje job `docker`): `COSIGN_PRIVAT
 ```yaml
   deploy-dev:
     if: github.ref == 'refs/heads/main'
-    needs: docker
+    needs: sign
     permissions: { contents: read, packages: read }
     uses: ./.github/workflows/deploy.yml
     with: { environment: dev }
-    secrets: inherit
+    secrets:                     # po nazwie, nie inherit
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      DEMO_USER_PASSWORD: ${{ secrets.DEMO_USER_PASSWORD }}   # production: pominięty
 
   deploy-staging:
     if: github.ref == 'refs/heads/main'
@@ -245,6 +251,9 @@ on:
   workflow_call:
     inputs:
       environment: { type: string, required: true }
+    secrets:
+      BETTER_AUTH_SECRET: { required: true }
+      DEMO_USER_PASSWORD: { required: false }   # tylko dev/staging
 
 jobs:
   deploy:
@@ -261,9 +270,10 @@ jobs:
       BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
       DEMO_USER_PASSWORD: ${{ secrets.DEMO_USER_PASSWORD }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/login-action@v3      # ghcr.io, GITHUB_TOKEN; obrazy są dziś publiczne, login chroni przed zmianą widoczności
-      - uses: sigstore/cosign-installer@… # wersja przypięta w planie
+      # wszystkie akcje przypięte do pełnego SHA z komentarzem wersji (jak w ci.yml); SHA w planie
+      - uses: actions/checkout@<sha>
+      - uses: docker/login-action@<sha>         # ghcr.io, GITHUB_TOKEN; obrazy są dziś publiczne, login chroni przed zmianą widoczności
+      - uses: sigstore/cosign-installer@<sha>
       - name: Rozwiąż digesty i zweryfikuj podpisy
         run: |
           # SHA commita z checkoutu (odporne na tagi z adnotacją), właściciel małymi literami
@@ -284,7 +294,7 @@ jobs:
 - **Weryfikuj to, co uruchamiasz:** digest rozwiązywany raz, podpisy sprawdzane dla digestu, compose uruchamia ten sam digest. Weryfikacja keyless sprawdza tożsamość workflow (repo + `ci.yml` + `refs/heads/main`), więc podpis z innego repo, gałęzi lub workflow nie przejdzie. Zmiana nazwy `ci.yml` wymaga zmiany tożsamości w `deploy.yml`.
 - **Tag na commicie spoza `main`** nie ma obrazu `:<sha>` → re-tag w jobie `docker` pada → produkcja się nie wdraża.
 - Na PR i gałęziach innych niż `main` joby `deploy-*` są pomijane (`if`), a branch policy dev/staging i tak by je odrzuciła.
-- Uprawnienia: wywołujący `deploy-*` daje `contents: read, packages: read`; `docker` potrzebuje `packages: write` i `id-token: write`; `check-staging` — `deployments: read`; `release` — `contents: write`. Odpowiedź na niewiadomą ADR-0012: `packages: read` wystarcza do pobrania obrazu w wywoływanym workflow.
+- Uprawnienia: wywołujący `deploy-*` daje `contents: read, packages: read`; `docker` potrzebuje `packages: write`; `sign` — `packages: write` (zapis podpisów) i `id-token: write`; `check-staging` — `deployments: read`; `release` — `contents: write`. Odpowiedź na niewiadomą ADR-0012: `packages: read` wystarcza do pobrania obrazu w wywoływanym workflow.
 - Flagi cosign potwierdzone 2026-11-22 w dokumentacji v3.1.4 (`sigstore/cosign`: `doc/cosign_sign.md`, `doc/cosign_verify.md`) i w README `sigstore/cosign-installer` v4.1.3, którego oficjalny przykład podpisuje ten sam digest kluczem i keyless. cosign v3 domyślnie zapisuje podpisy jako artefakty OCI 1.1 (referrers); zachowanie GHCR do potwierdzenia w pierwszym przebiegu (awaryjnie `--registry-referrers-mode legacy`).
 
 ## 6. Smoke test
@@ -324,15 +334,15 @@ Unit / integracyjne / E2E bez zmian. Nowe: testy `SEED_ON_START` w `env.spec.ts`
 ## 9. Dokumentacja
 
 - `requirements.md`: 2.3 (Etap 7), 2.4 (link do planu), 2.5 (backlog), 8.1 (decyzje 31–37 po rewizji, 56–58), status dokumentu.
-- `README.md`: sekcja „Wdrożenia (Etap 5)" — jak działa pipeline, konfiguracja Environments i sekretów cosign (generowanie pary kluczy), release, ręczna weryfikacja podpisu obrazu.
+- `README.md`: sekcja „Wdrożenia (Etap 5)" — jak działa pipeline, konfiguracja Environments, w tym `signing` z kluczem cosign (generowanie pary kluczy), release, ręczna weryfikacja podpisu obrazu.
 - ADR-0012 i ADR-0013 → Zaakceptowany po wdrożeniu (SHA commitów, linki do przebiegów).
 
 ## 10. Definicja ukończenia
 
 - [ ] `SEED_ON_START` w `env.ts` (z wymogiem `DEMO_*`) i w `index.ts`; testy w `env.spec.ts`.
 - [ ] `docker-compose.deploy.yml` z obrazami po digeście, wymaganymi zmiennymi (`:?`), bez portu backendu.
-- [ ] Trzy Environments: dev/staging z policy `main`, production z policy `v*` i required reviewers; sekrety repo `COSIGN_*`, `cosign.pub` w repo.
-- [ ] Job `docker`: podpisy keyless + kluczem na `main`, re-tag bez zmiany digestu na tagu.
+- [ ] Trzy Environments: dev/staging z policy `main`, production z policy `v*` i required reviewers; `signing` z policy `main` i sekretami `COSIGN_*`; brak sekretów repo; `cosign.pub` w repo.
+- [ ] Job `docker` wystawia digesty; job `sign` (środowisko `signing`) podpisuje keyless + kluczem na `main`; re-tag bez zmiany digestu na tagu.
 - [ ] `deploy.yml` (`workflow_call`, `concurrency`, weryfikacja podpisów, deploy po digeście, digest w podsumowaniu) + joby `deploy-dev` → `deploy-staging` (main) i `check-staging` → `deploy-production` → `release` (tag).
 - [ ] `scripts/smoke-test.sh` z krokami 1–5; błąd czerwieni job, logi compose przy porażce, teardown zawsze.
 - [ ] Zielony przebieg na `main`, release `v*` wdrożony po zatwierdzeniu, kontrprzykłady z sekcji 8 czerwone.

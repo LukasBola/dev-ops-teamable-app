@@ -304,7 +304,7 @@ Lekki test instrumentacji: `GET /api/metrics` zwraca 200 i zawiera `http_request
 > Dopisane 2026-11-22 z review architektonicznego specu Etapu 5; backlog w `requirements.md` 2.5. Decyzje, numery i szczegóły zapadną przy brainstormingu Etapu 6.
 
 - **Skan obrazów Trivy** w CI, wynik SARIF do zakładki Security (obok CodeQL). Do ustalenia: czy podatność krytyczna blokuje push/wdrożenie.
-- **Przypinanie akcji GitHub po SHA + Dependabot `github-actions`** — ochrona łańcucha dostaw CI.
+- ~~**Przypinanie akcji GitHub po SHA + Dependabot `github-actions`**~~ — zrealizowane przed Etapem 5 w hardeningu CI (PR #12, 2026-11-24).
 - **Metryki DORA** (częstotliwość wdrożeń, lead time, odsetek nieudanych wdrożeń) liczone z Deployments API, które od Etapu 5 zapisuje wdrożenia dev/staging/production.
 - Etap 5 dostarcza reużywalny `deploy.yml`: skan OWASP ZAP (7a) może podnieść stack tym samym workflow.
 

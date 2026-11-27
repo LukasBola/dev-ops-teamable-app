@@ -81,7 +81,7 @@ Pomysły zgłoszone, ale świadomie przesunięte. Każdy ma etap docelowy; przy 
 | Pomysł | Co daje | Etap docelowy | Źródło |
 |---|---|---|---|
 | Skan obrazów Trivy (SARIF do zakładki Security) | Znane podatności (CVE) w obrazach przed wdrożeniem | 6 | review specu Etapu 5 (2026-11-22) |
-| Przypinanie akcji GitHub po SHA + Dependabot `github-actions` | Ochrona łańcucha dostaw CI przed podmianą akcji | 6 | review specu Etapu 5 (2026-11-22) |
+| ~~Przypinanie akcji GitHub po SHA + Dependabot `github-actions`~~ | Ochrona łańcucha dostaw CI przed podmianą akcji | **zrealizowane** przed Etapem 5 w hardeningu CI (PR #12, 2026-11-24; [plan](docs/superpowers/plans/2026-11-24-ci-hardening.md)) | review specu Etapu 5 (2026-11-22) |
 | Metryki DORA z Deployments API (częstotliwość wdrożeń, lead time, odsetek porażek) | Mierzalna jakość procesu dostarczania | 6 | review specu Etapu 5 (2026-11-22) |
 | Atestacje obrazów (provenance, SBOM) i ich weryfikacja przy wdrożeniu | Sprawdzalne pochodzenie i skład obrazu | 7 | review specu Etapu 5 (2026-11-22) |
 | Rollback: ponowne wdrożenie starego digestu (`workflow_dispatch`) vs `git revert` w GitOps | Porównanie dwóch modeli cofania wersji | 7 | review specu Etapu 5 (2026-11-22) |
@@ -316,14 +316,14 @@ Etap 1 uznajemy za zakończony, gdy:
 | # | Temat | Decyzja |
 |---|-------|---------|
 | 30 | Cel wdrożenia | **Ephemeral w CI**: weryfikacja podpisów → `pull` → `up` → smoke → `down`; nic nie żyje poza pipeline'em. |
-| 31 | Trigger CD | `main`: `docker` → deploy dev → staging; tag `v*`: re-tag → `check-staging` (staging zielony dla SHA) → production (approval gate) → GitHub Release. Joby w `ci.yml`, kroki w reużywalnym `deploy.yml` — rewizja 2026-11-22, [ADR-0012](docs/adr/0012-promocja-obrazu-reuzywalny-deploy.md). |
+| 31 | Trigger CD | `main`: `docker` → `sign` → deploy dev → staging; tag `v*`: re-tag → `check-staging` (staging zielony dla SHA) → production (approval gate) → GitHub Release. Joby w `ci.yml`, kroki w reużywalnym `deploy.yml` — rewizja 2026-11-22, [ADR-0012](docs/adr/0012-promocja-obrazu-reuzywalny-deploy.md). |
 | 32 | Promowany artefakt | **Ten sam obraz GHCR** (build once, deploy many); deploy po digeście rozwiązanym z `:<sha>`, digest w podsumowaniu joba; deploy nigdy nie buduje. |
 | 33 | Sekrety i zmienne | **GitHub Environments** (dev/staging tylko z `main`, production tylko z tagów `v*` + required reviewers). |
 | 34 | Dane per środowisko | dev/staging: `SEED_ON_START=true` → backend zakłada/resetuje konto demo przy starcie (`seedDemoUser`); production: czysty start (FR-9), konta przez CLI. |
 | 35 | Flagi runtime | `SEED_ON_START` on/off per środowisko; `LOG_LEVEL` przeniesiony do Etapu 6 (decyzja 38) — rewizja 2026-11-22. |
 | 36 | Izolacja środowisk | Osobne compose project (`teamable_dev`/`_staging`/`_production`), różne porty, `concurrency` per środowisko. |
 | 37 | Smoke test | Health + SPA + `/api/profile` bez sesji → 401 + logowanie złym hasłem → 401 (nie 403); dev/staging także logowanie kontem demo → profil 200. Błąd czerwieni job. |
-| 56 | Podpisy obrazów | cosign keyless (OIDC) **i** kluczem; deploy weryfikuje oba przed uruchomieniem. Numer po #55 (Graphify). [ADR-0013](docs/adr/0013-podpisy-obrazow-cosign.md) |
+| 56 | Podpisy obrazów | cosign keyless (OIDC) **i** kluczem w osobnym jobie `sign`; klucz w sekretach środowiska `signing` (tylko `main`), nie repo — zmiana 2026-11-27; deploy weryfikuje oba przed uruchomieniem. Numer po #55 (Graphify). [ADR-0013](docs/adr/0013-podpisy-obrazow-cosign.md) |
 | 57 | Release | Tag `vX.Y.Z` → re-tag obrazów bez rebuildu → po wdrożeniu prod `gh release create --generate-notes`. |
 | 58 | Kubernetes + GitOps | Osobny **Etap 7** (Kubernetes + Argo CD); Etap 5 zostaje przy Compose. |
 
