@@ -3,13 +3,14 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > **Wersja:** 2026-11-22 — zastępuje plan z 2026-06-17 (historia w git). Pisany do zatwierdzonej rewizji specu.
+> **Rewizja 2026-11-28 (review PR #54):** para digestów z buildu do produkcji (manifest staging zamiast Deployments API), sekrety tylko w krokach, smoke bez hasła w argv i bez Bash 4, Task 3 po ochronie `main` (#26), kontrprzykład bramki na commicie z finalnym workflow.
 > **Rewizja 2026-11-27 (#40):** klucz cosign w środowisku `signing` i osobny job `sign`; sekrety do `deploy.yml` po nazwie; akcje przypięte do SHA; gałąź i PR na każde zadanie.
 
 **Goal:** Pipeline CD, który podpisuje obrazy z `main`, promuje ten sam digest przez efemeryczne środowiska dev → staging → production (produkcja tylko po zielonym staging i zatwierdzeniu), z testem dymnym po każdym wdrożeniu i GitHub Release na końcu.
 
 **Architecture:** Job `docker` buduje i wypycha obrazy, job `sign` (środowisko `signing`) podpisuje je po digeście. Joby `deploy-*` w `.github/workflows/ci.yml` wywołują reużywalny `.github/workflows/deploy.yml` (`workflow_call`, wejście `environment`). Deploy: rozwiązanie digestu z `:<sha7>` → `cosign verify` (klucz + keyless) → `docker compose -f docker-compose.deploy.yml up --wait` → `scripts/smoke-test.sh` → `down -v`. Backend dostaje `SEED_ON_START`.
 
-**Tech Stack:** GitHub Actions (reusable workflows, Environments, Deployments API), Docker Compose, GHCR, cosign v3.1.4 (Sigstore), crane v0.22.1, bash + curl + jq, Zod 4, Vitest.
+**Tech Stack:** GitHub Actions (reusable workflows, Environments, artefakty i Actions API), Docker Compose, GHCR, cosign v3.1.4 (Sigstore), crane v0.22.1, bash + curl + jq, Zod 4, Vitest.
 
 **Spec:** [`docs/superpowers/specs/2026-06-17-etap5-wdrozenia-design.md`](../specs/2026-06-17-etap5-wdrozenia-design.md) · ADR: [0012](../../adr/0012-promocja-obrazu-reuzywalny-deploy.md), [0013](../../adr/0013-podpisy-obrazow-cosign.md)
 
@@ -33,7 +34,8 @@
 
   | Task | Wymaga wcześniej | Dlaczego |
   |---|---|---|
-  | 1, 2, 3 | — | nowe, jeszcze nieużywane elementy; brak zmiennej = `false` |
+  | 1, 2 | — | kod i lokalny test nie potrzebują klucza podpisującego |
+  | 3 | ochrona `main` (#26) | przed zapisaniem klucza sprawdzić wymaganie PR, zielonego CI i ograniczenie obejść; przed wydaniem ograniczyć tworzenie, zmianę i usuwanie tagów `v*` do uprawnionych wydawców |
   | 4 | 3, #30 | `sign` potrzebuje środowiska `signing` z kluczem; `concurrency` na poziomie workflow (#30), żeby dwa przebiegi `main` nie ścigały się o `latest` i o kolejność podpisów |
   | 5 | 1, 2, 3, 4 | wdrożenie potrzebuje środowisk z sekretami, compose, testu dymnego i podpisów do weryfikacji |
   | 6 | 5 | joby tylko na tagach `v*`; bez sensu przed działającym staging |
@@ -42,7 +44,7 @@
   **Pułapka:** merge Task 4 lub 5 przed Task 3 sprawi, że GitHub sam utworzy brakujące środowisko, ale bez ochrony i bez sekretów, i job padnie (spec, sekcja 4). Jeśli dwa zadania nie mogą wejść osobno, idą w jednym PR-ze z kilkoma `Closes`.
 - Runtime Node 24 LTS ([ADR-0014](../../adr/0014-runtime-node-24.md)); plan go nie zmienia, polecenia `npm` i obrazy już go używają.
 - Repo: `LukasBola/dev-ops-teamable-app`; obrazy: `ghcr.io/lukasbola/teamable-backend`, `ghcr.io/lukasbola/teamable-frontend` (właściciel **małymi literami**: `${GITHUB_REPOSITORY_OWNER,,}`).
-- Etykieta obrazu = pierwsze 7 znaków `git rev-parse HEAD` (`git rev-parse HEAD | cut -c1-7`, nie `--short`, które potrafi wydłużyć). Deploy zawsze po digeście `obraz@sha256:…`; nigdy `latest`.
+- Etykieta obrazu = pierwsze 7 znaków `git rev-parse HEAD` (`git rev-parse HEAD | cut -c1-7`, nie `--short`, które potrafi wydłużyć). Deploy zawsze po digeście `obraz@sha256:…`; nigdy `latest`. **Digestów nigdy nie rozwiązuj z etykiety** (`:<sha7>` przesuwa każdy „Re-run” joba `docker`): dev/staging biorą je z `needs.docker.outputs`, wydanie z manifestu staging (`staging-<run_id>-<run_attempt>.json`).
 - Środowiska: `dev` (port 8081), `staging` (8082), `production` (8083); `BETTER_AUTH_URL=http://localhost:<port>`; `COMPOSE_PROJECT_NAME=teamable_<env>`.
 - Tożsamość keyless: `https://github.com/LukasBola/dev-ops-teamable-app/.github/workflows/ci.yml@refs/heads/main`, wystawca `https://token.actions.githubusercontent.com`. Klucz publiczny: `cosign.pub` w korzeniu repo. Klucz prywatny i hasło: sekrety środowiska `signing` (policy `main`), nigdy sekrety repo.
 - Sekrety nigdy w argumentach procesu ani w logach: hasła przez stdin/`env://`, `openssl … | gh secret set` (bez echa).
@@ -50,14 +52,15 @@
 - Komunikaty, komentarze, opisy testów — po polsku.
 - **Akcje tylko przypięte do pełnego SHA z komentarzem wersji** (jak w `ci.yml` po #12; Dependabot je podbija). Akcje, które już są w `ci.yml` (`actions/checkout`, `docker/login-action` itd.), bierz z tym samym SHA co w `ci.yml`. Nowe (SHA sprawdzone 2026-11-27 przez `gh api repos/<repo>/commits/<tag>`): `sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3` z `cosign-release: v3.1.4`; `imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7` z `version: v0.22.1` (sam loguje `crane` do ghcr.io tokenem `GITHUB_TOKEN`). v4.1.4 cosign-installer (2026-11-24, cosign v3.1.5) jest jeszcze w 7-dniowej karencji Dependabota — podbije ją PR Dependabota.
 - cosign v3 (potwierdzone w `doc/cosign_sign.md`, `doc/cosign_verify.md` z taga v3.1.4 i w README cosign-installer): `cosign sign --yes [--key env://COSIGN_PRIVATE_KEY] <obraz@digest>`, hasło klucza z `COSIGN_PASSWORD`; `cosign verify --key cosign.pub` oraz `--certificate-identity` + `--certificate-oidc-issuer`. Dwa podpisy (kluczem i keyless) na jednym digeście to wzorzec z oficjalnego przykładu cosign-installer. v3 domyślnie zapisuje podpisy w nowym formacie bundle jako artefakty OCI 1.1 (referrers).
-- **KRYTYCZNE — wyścig wdrożenia z budowaniem obrazu:** joby `deploy-*` muszą być w **tym samym** `ci.yml` co job `docker` i zależeć od niego przez `needs` (bezpośrednio albo łańcuchem). Osobny workflow (`cd.yml`) na ten sam `push` startuje równolegle z CI i robi `pull` obrazu, którego jeszcze nie ma; `workflow_run` usuwa wyścig, ale zostało odrzucone w [ADR-0012](../../adr/0012-promocja-obrazu-reuzywalny-deploy.md). Nie przenoś jobów wdrożeniowych do osobnego pliku i nie zastępuj `needs` warunkami `if:`. Ścieżka tagu `v*` nie potrzebuje joba `docker`: obraz zbudował wcześniej przebieg `main`, a `check-staging` potwierdza, że staging ten commit przyjął.
+- **KRYTYCZNE — wyścig wdrożenia z budowaniem obrazu:** joby `deploy-*` muszą być w **tym samym** `ci.yml` co job `docker` i zależeć od niego przez `needs` (bezpośrednio albo łańcuchem). Osobny workflow (`cd.yml`) na ten sam `push` startuje równolegle z CI i robi `pull` obrazu, którego jeszcze nie ma; `workflow_run` usuwa wyścig, ale zostało odrzucone w [ADR-0012](../../adr/0012-promocja-obrazu-reuzywalny-deploy.md). Nie przenoś jobów wdrożeniowych do osobnego pliku i nie zastępuj `needs` warunkami `if:`. Ścieżka tagu `v*` nie potrzebuje joba `docker`: obraz zbudował wcześniej przebieg `main`, a `check-staging` bierze parę digestów z manifestu staging tego commita.
 - Decyzja planu (spec 11 zostawia nazwy wykonawcy): re-tag `vX.Y.Z` robi osobny job `tag-release` po `check-staging`, a job `docker` na tagach jest pomijany. Dzięki temu tag na commicie niepromowalnym nie zostawia etykiety wersji w GHCR.
 - Po każdym tasku zmieniającym kod: `graphify update .` (robi to też pre-commit).
 
 ## Review Focus
 
 - **`BETTER_AUTH_URL` z ukośnikiem na końcu** (`http://localhost:8081/`): smoke musi obciąć `/` przed użyciem jako `Origin`, inaczej fałszywe 403 w kroku 4/5 → test w Task 2.
-- **Hasło demo ze znakami `"`, `$`, `\`, spacją**: JSON logowania z `jq --arg`, nie sklejany w bashu → test w Task 2.
+- **Hasło demo ze znakami `"`, `$`, `\`, spacją**: JSON logowania z `jq` czytającego wartości ze środowiska (`env.PASSWORD`), nie z `--arg` (argv) i nie sklejany w bashu → test w Task 2.
+- **`:<sha7>` przesunięta po staging** (Re-run joba `docker` na `main`): wydanie bierze parę z manifestu staging albo się zatrzymuje → kontrprzykład w Task 8.
 - **`DEMO_USER_EMAIL` z wielkimi literami** (`Demo@Example.com`): profil ma e-mail znormalizowany, smoke porównuje małymi literami → test w Task 2.
 - **Warianty `SEED_ON_START`** (`'TRUE'`, `'1'`, `''`, brak) i produkcja bez `DEMO_*` przy `false` → testy w Task 1.
 - **Tag wysłany razem z commitem** (`git push --follow-tags`): `check-staging` czerwony z czytelnym komunikatem, nie zatwierdzanie w ciemno → weryfikacja w Task 8.
@@ -176,12 +179,12 @@ git commit -m "feat(backend): seed demo account on start when SEED_ON_START is s
 2. `curl -fsS "$BASE/"` zawiera `<div id="app">`.
 3. `status "$BASE/api/profile"` == `401`.
 4. Logowanie nieistniejącym kontem `smoke-nobody@example.com` / `zle-haslo-123` z `-H "Origin: $BASE"` → `401` (403 = „BETTER_AUTH_URL nie zgadza się z adresem aplikacji”).
-5. Gdy `SMOKE_LOGIN` == `true`: logowanie demo z zapisem ciasteczek, potem `curl -fsS -b "$JAR" "$BASE/api/profile" | jq -r .email` == `DEMO_USER_EMAIL` małymi literami (`${DEMO_USER_EMAIL,,}`).
+5. Gdy `SMOKE_LOGIN=true`: zaloguj konto demo z zapisem ciasteczek. `curl -fsS -b "$JAR" "$BASE/api/profile" | jq -e '.email == (env.DEMO_USER_EMAIL | ascii_downcase)'` musi zakończyć się sukcesem.
 
 Ciało logowania (krok 4 i 5) zawsze tak — hasło nie trafia do argv:
 
 ```bash
-jq -n --arg email "$EMAIL" --arg password "$PASSWORD" '{email: $email, password: $password}' \
+EMAIL="$EMAIL" PASSWORD="$PASSWORD" jq -n '{email: env.EMAIL, password: env.PASSWORD}' \
   | curl … -H 'Content-Type: application/json' -H "Origin: $BASE" --data @- "$BASE/api/auth/sign-in/email"
 ```
 
@@ -361,15 +364,17 @@ Expected: `docker` → `sign` zielone, obie weryfikacje przechodzą. Rozstrzygni
 
 **Interfaces:**
 - Consumes: `docker-compose.deploy.yml`, `scripts/smoke-test.sh` (Task 2), `cosign.pub` i podpisane obrazy (Task 4), zmienne i sekrety środowisk (Task 3).
-- Produces: `deploy.yml` z `on: workflow_call: inputs: environment (string, required)`; `on.workflow_call.secrets: { BETTER_AUTH_SECRET: { required: true }, DEMO_USER_PASSWORD: { required: false } }`; wywołanie: `uses: ./.github/workflows/deploy.yml`, `with: { environment: <env> }`, `permissions: { contents: read, packages: read }`, sekrety **po nazwie, nie `inherit`**: `BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}` i — tylko dev/staging — `DEMO_USER_PASSWORD: ${{ secrets.DEMO_USER_PASSWORD }}` (spec, sekcja 4). Każde udane wywołanie zostawia deployment środowiska ze statusem sukcesu (czyta go Task 6).
+- Produces: `deploy.yml` (`workflow_call`) z wymaganymi wejściami `environment`, `backend_digest`, `frontend_digest` i `on.workflow_call.secrets: { BETTER_AUTH_SECRET: { required: true }, DEMO_USER_PASSWORD: { required: false } }`. Job wybiera środowisko; caller przekazuje sekrety **po nazwie, nie `inherit`** (`BETTER_AUTH_SECRET` i — tylko dev/staging — `DEMO_USER_PASSWORD`; bez tego sekret środowiska jest pusty — spec, sekcja 4), a job jawnie sprawdza, że `BETTER_AUTH_SECRET` nie jest pusty. Wywołanie: `permissions: { contents: read, packages: read }`. Po udanym smoke staging publikuje manifest zawierający pełny SHA i dokładne referencje obu zweryfikowanych obrazów; nazwa artefaktu obejmuje `run_id` i `run_attempt`. Dev i production nie publikują manifestu staging.
 
-- [ ] **Step 1: Napisz `deploy.yml`** wg szkicu ze specu, sekcja 5: job `deploy` z `environment: ${{ inputs.environment }}`, `concurrency: { group: "deploy-${{ inputs.environment }}", cancel-in-progress: false }`, `env` z `vars.*`/`secrets.*` (jak w specu), `COMPOSE_PROJECT_NAME: teamable_${{ inputs.environment }}`, `COMPOSE_FILE: docker-compose.deploy.yml`. Kroki (akcje po SHA, Global Constraints): `actions/checkout` (`persist-credentials: false`) → `docker/login-action` (ghcr.io, `github.actor`, `secrets.GITHUB_TOKEN`) → `sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3` (`cosign-release: v3.1.4`) → `imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7` (`version: v0.22.1`) → krok „Rozwiąż digesty i zweryfikuj podpisy”:
+- [ ] **Step 1: Napisz `deploy.yml`** wg szkicu ze specu, sekcja 5: job `deploy` z `environment: ${{ inputs.environment }}`, `concurrency: { group: "deploy-${{ inputs.environment }}", cancel-in-progress: false }`, `env` joba tylko z `vars.*` (bez sekretów), `COMPOSE_PROJECT_NAME: teamable_${{ inputs.environment }}`, `COMPOSE_FILE: docker-compose.deploy.yml`. Kroki (akcje po SHA, Global Constraints): `actions/checkout` (`persist-credentials: false`) → `docker/login-action` (ghcr.io, `github.actor`, `secrets.GITHUB_TOKEN`) → `sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3` (`cosign-release: v3.1.4`) → krok „Zweryfikuj podpisy” z `env:` `BACKEND_DIGEST: ${{ inputs.backend_digest }}`, `FRONTEND_DIGEST: ${{ inputs.frontend_digest }}`:
 
 ```bash
-owner="${GITHUB_REPOSITORY_OWNER,,}"; sha7="$(git rev-parse HEAD | cut -c1-7)"
+owner="${GITHUB_REPOSITORY_OWNER,,}"
 id="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/ci.yml@refs/heads/main"
 for svc in backend frontend; do
-  ref="ghcr.io/$owner/teamable-$svc@$(crane digest "ghcr.io/$owner/teamable-$svc:$sha7")"
+  var="${svc^^}_DIGEST"; digest="${!var}"
+  [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::Nieprawidłowy digest $svc: '$digest'"; exit 1; }
+  ref="ghcr.io/$owner/teamable-$svc@$digest"
   cosign verify --key cosign.pub "$ref" > /dev/null
   cosign verify --certificate-identity "$id" \
     --certificate-oidc-issuer https://token.actions.githubusercontent.com "$ref" > /dev/null
@@ -378,9 +383,9 @@ for svc in backend frontend; do
 done
 ```
 
-→ `docker compose pull` → `docker compose up -d --wait` → `./scripts/smoke-test.sh "$BETTER_AUTH_URL"` z `SMOKE_LOGIN: ${{ vars.SEED_ON_START }}` → `if: failure()` `docker compose logs` → `if: always()` `docker compose down -v`.
+→ krok Compose z `env:` `BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}`, `DEMO_USER_PASSWORD: ${{ secrets.DEMO_USER_PASSWORD }}`: `[ -n "$BETTER_AUTH_SECRET" ] || { echo "::error::Pusty BETTER_AUTH_SECRET w środowisku ${{ inputs.environment }}"; exit 1; }`, potem `docker compose pull` i `docker compose up -d --wait` → `./scripts/smoke-test.sh "$BETTER_AUTH_URL"` z `SMOKE_LOGIN: ${{ vars.SEED_ON_START }}` i tylko `DEMO_USER_PASSWORD` w `env` → tylko `if: inputs.environment == 'staging'`: `jq -n --arg sha "$(git rev-parse HEAD)" --arg backend "$BACKEND_IMAGE" --arg frontend "$FRONTEND_IMAGE" '{sha: $sha, backend: $backend, frontend: $frontend}' > "staging-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT.json"` i `actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2` (`name: staging-${{ github.run_id }}-${{ github.run_attempt }}`, ten plik) → `if: failure()` `docker compose logs` → `if: always()` `docker compose down -v`. Kroki `logs` i `down` też interpolują compose (`${BETTER_AUTH_SECRET:?}`), więc dostają te same sekrety w `env` kroku.
 
-- [ ] **Step 2: Dodaj joby w `ci.yml`**: `deploy-dev` (`if: github.ref == 'refs/heads/main'`, `needs: sign`) i `deploy-staging` (`if` jak wyżej, `needs: deploy-dev`) — oba wywołują `deploy.yml` z interfejsu powyżej.
+- [ ] **Step 2: Dodaj joby w `ci.yml`**: `deploy-dev` (`if: github.ref == 'refs/heads/main'`, `needs: [docker, sign]`) i `deploy-staging` (`if` jak wyżej, `needs: [docker, deploy-dev]` — `needs.<job>` widzi tylko bezpośrednie zależności) — oba wywołują `deploy.yml` z interfejsu powyżej, z `backend_digest`/`frontend_digest` z `needs.docker.outputs`.
 
 - [ ] **Step 3: Walidacja składni**
 
@@ -399,7 +404,7 @@ Expected na PR: joby `deploy-*` pominięte. Przed merge'em: Task 3 i 4 zrobione 
 - [ ] **Step 5: Po merge'u — pierwszy przebieg CD na `main`**
 
 Run: `gh run watch $(gh run list --branch main --limit 1 --json databaseId --jq '.[0].databaseId')`
-Expected: `docker` → `sign` → `deploy-dev` → `deploy-staging` zielone; w Summary każdego deployu digesty obu obrazów, te same w dev i staging; `gh api "repos/$R/deployments?environment=staging&per_page=1" --jq '.[0].sha'` == SHA merge commita. Link do przebiegu zapisz do Task 8.
+Expected: `docker` → `sign` → `deploy-dev` → `deploy-staging` zielone; w Summary każdego deployu digesty obu obrazów, te same w dev i staging; przebieg ma artefakt `staging-<run_id>-<run_attempt>` z pełnym SHA merge commita i tymi samymi referencjami (`gh run download <run_id> -n staging-<run_id>-1`). Link do przebiegu zapisz do Task 8.
 
 ---
 
@@ -409,23 +414,14 @@ Expected: `docker` → `sign` → `deploy-dev` → `deploy-staging` zielone; w S
 - Modify: `.github/workflows/ci.yml`
 
 **Interfaces:**
-- Consumes: deploymenty środowiska `staging` (Task 5), `deploy.yml` (Task 5), obrazy `:<sha7>` (Task 4).
+- Consumes: manifest `staging-<run_id>-<run_attempt>.json` z udanego przebiegu `main` (Task 5), `deploy.yml` (Task 5), podpisane obrazy (Task 4).
 - Produces: na tagu `v*`: łańcuch `e2e` → `check-staging` → `tag-release` → `deploy-production` → `release`.
 
 - [ ] **Step 1: Dodaj joby** (wszystkie z `if: startsWith(github.ref, 'refs/tags/v')`)
 
-- `check-staging`: `needs: e2e`, `permissions: { deployments: read }`, checkout, krok z `GH_TOKEN: ${{ github.token }}`:
-
-```bash
-sha="$(git rev-parse HEAD)"
-id="$(gh api "repos/$GITHUB_REPOSITORY/deployments?environment=staging&sha=$sha&per_page=1" --jq '.[0].id // empty')"
-[ -n "$id" ] || { echo "::error::Brak wdrożenia staging dla $sha — najpierw main musi przejść dev i staging"; exit 1; }
-state="$(gh api "repos/$GITHUB_REPOSITORY/deployments/$id/statuses?per_page=1" --jq '.[0].state // empty')"
-[ "$state" = success ] || { echo "::error::Ostatnie wdrożenie staging dla $sha: '${state:-brak statusu}' — poczekaj na zielony staging i uruchom ponownie"; exit 1; }
-```
-
-- `tag-release`: `needs: check-staging`, `permissions: { contents: read, packages: write }`, checkout, `imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7` (`version: v0.22.1`; akcja sama loguje do ghcr.io, `crane tag` dodaje etykietę do istniejącego manifestu bez pobierania — dokumentacja `crane_tag.md`); dla `backend` i `frontend`: `crane tag "$src" "$GITHUB_REF_NAME"`, gdzie `src=ghcr.io/<owner>/teamable-<svc>:<sha7>`, potem `test "$(crane digest "$src")" = "$(crane digest "${src%:*}:$GITHUB_REF_NAME")"` (ten sam digest, spec 5).
-- `deploy-production`: `needs: tag-release`, wywołanie `deploy.yml` z `environment: production` (interfejs z Task 5).
+- `check-staging`: `needs: e2e`, `permissions: { actions: read, contents: read }`. Rozwiąż tag do pełnego SHA commita. Przez Actions API wybierz najnowszą udaną próbę `ci.yml` dla `event=push`, `branch=main`, tego repo i dokładnego SHA. Pobierz jej `staging-<run_id>-<run_attempt>.json`; sprawdź SHA, dokładne nazwy obu obrazów i format digestów. Brak udanej próby lub jej manifestu = błąd z komunikatem „Brak potwierdzenia staging dla <SHA>”. Wystaw oba digesty jako outputy joba.
+- `tag-release`: `needs: check-staging`, `permissions: { contents: read, packages: write }`. Użyj przypiętej wyżej akcji `setup-crane` (`imjasonh/setup-crane@feee3b6bb0d4c68370f256a4502498c9227e5c6b # v0.7`, `version: v0.22.1`). Dla obu obrazów wykonaj `crane tag "$repo@$digest" "$GITHUB_REF_NAME"` i sprawdź, że `crane digest "$repo:$GITHUB_REF_NAME"` zwraca oczekiwany digest.
+- `deploy-production`: `needs: [check-staging, tag-release]`; wywołaj `deploy.yml` z `environment: production` i oboma digestami z `needs.check-staging.outputs`. Po zatwierdzeniu sprawdź oba podpisy i uruchom te same referencje.
 - `release`: `needs: deploy-production`, `permissions: { contents: write }`, `gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag` z `GH_TOKEN`, `GH_REPO: ${{ github.repository }}`.
 
 - [ ] **Step 2: Walidacja składni**
@@ -467,13 +463,9 @@ Expected: CI na PR zielone; joby `sign`, `deploy-*`, `check-staging`, `tag-relea
 **Files:**
 - Modify: `docs/adr/0012-promocja-obrazu-reuzywalny-deploy.md`, `docs/adr/0013-podpisy-obrazow-cosign.md`, `docs/adr/README.md`, `requirements.md`
 
-- [ ] **Step 1: Kontrprzykład bramki staging** (Review Focus 5) — tag na starszym commicie z `main` bez wdrożenia staging, np. `17c2148`:
+- [ ] **Step 1: Kontrprzykład bramki staging.** Z aktualnego `main` zawierającego kompletny workflow utwórz lokalną gałąź testową i pusty commit. Uprawniony wydawca oznacza ten commit testowym tagiem `v0.0.0-gate` i wypycha wyłącznie tag. Nie zmieniaj rulesetu na potrzeby testu.
 
-```bash
-git tag v0.0.0-gate 17c2148 && git push origin v0.0.0-gate
-```
-
-Expected: `check-staging` czerwony z komunikatem „Brak wdrożenia staging dla …”; `tag-release` i dalsze pominięte; w GHCR brak etykiety `v0.0.0-gate`. Potem: `git push origin :refs/tags/v0.0.0-gate && git tag -d v0.0.0-gate`. Zapisz link do przebiegu.
+Expected: `e2e` przechodzi, `check-staging` uruchamia się i zgłasza brak potwierdzenia staging dla tego SHA. `tag-release`, produkcja i release pozostają pominięte. Drugi przypadek: po udanym staging dla pary A zmiana etykiety testowej na parę B nie zmienia digestów wybranych do wydania. Zapisz wyniki obu prób.
 
 - [ ] **Step 2: Kontrprzykłady podpisów** (lokalnie, `cosign` z Task 3):
 
@@ -516,5 +508,6 @@ git push -u origin docs/etap5-close && gh pr create --fill   # w opisie Closes #
 
 - **Pokrycie specu:** §2 → Task 1; §3 → Task 2; §4 → Task 3; §5 docker/podpisy → Task 4, deploy.yml/dev/staging → Task 5, tag/prod/release → Task 6; §6 → Task 2 (+ wywołanie w Task 5); §7 → Task 8; §8 kontrprzykłady → Task 2, 8; §9 → Task 7, 8; §10 → Task 1–8.
 - **Odstępstwo od szkicu specu:** re-tag w osobnym jobie `tag-release` po `check-staging` (nie w `docker`) — opisane w Global Constraints; spec §11 zostawia nazwy i kolejność wykonawcy, kryterium „ten sam digest” zachowane.
+- **Rewizja 2026-11-28 (review PR #54):** `deploy.yml` bez `setup-crane` (digesty przychodzą z wejść, nie z `crane digest`); `check-staging` czyta manifest z Actions API zamiast Deployments API; otwarte: wybór manifestu po „Re-run failed jobs” (ADR-0012, Niewiadome).
 - **Rewizja 2026-11-27 (#40):** Task 3 bez commita (zamknięcie komentarzem), `cosign.pub` w PR-ze Task 4; podpisy w jobie `sign` zamiast `docker`; weryfikacja pierwszego przebiegu przeniesiona z Task 7 do Task 4 (podpisy) i Task 5 (wdrożenie), bo każdy task wchodzi na `main` osobno.
 - **Spójność nazw:** `BACKEND_IMAGE`/`FRONTEND_IMAGE` (Task 2 ↔ 5), `SMOKE_LOGIN` (Task 2 ↔ 5), `SEED_ON_START` (Task 1 ↔ 2 ↔ 3 ↔ 5), `cosign.pub` (Task 3 ↔ 5 ↔ 8).

@@ -316,8 +316,8 @@ Etap 1 uznajemy za zakończony, gdy:
 | # | Temat | Decyzja |
 |---|-------|---------|
 | 30 | Cel wdrożenia | **Ephemeral w CI**: weryfikacja podpisów → `pull` → `up` → smoke → `down`; nic nie żyje poza pipeline'em. |
-| 31 | Trigger CD | `main`: `docker` → `sign` → deploy dev → staging; tag `v*`: re-tag → `check-staging` (staging zielony dla SHA) → production (approval gate) → GitHub Release. Joby w `ci.yml`, kroki w reużywalnym `deploy.yml` — rewizja 2026-11-22, [ADR-0012](docs/adr/0012-promocja-obrazu-reuzywalny-deploy.md). |
-| 32 | Promowany artefakt | **Ten sam obraz GHCR** (build once, deploy many); deploy po digeście rozwiązanym z `:<sha>`, digest w podsumowaniu joba; deploy nigdy nie buduje. |
+| 31 | Trigger CD | `main`: `docker` → `sign` → deploy dev → staging (manifest pary digestów); tag `v*`: `check-staging` (para z manifestu staging dla SHA) → re-tag → production (approval gate) → GitHub Release. Joby w `ci.yml`, kroki w reużywalnym `deploy.yml` — rewizja 2026-11-22, [ADR-0012](docs/adr/0012-promocja-obrazu-reuzywalny-deploy.md). |
+| 32 | Promowany artefakt | **Ten sam obraz GHCR** (build once, deploy many); para digestów z buildu do produkcji (outputy `docker` → manifest staging), nigdy rozwiązywana z etykiety; digest w podsumowaniu joba; deploy nigdy nie buduje (rewizja 2026-11-28). |
 | 33 | Sekrety i zmienne | **GitHub Environments** (dev/staging tylko z `main`, production tylko z tagów `v*` + required reviewers). |
 | 34 | Dane per środowisko | dev/staging: `SEED_ON_START=true` → backend zakłada/resetuje konto demo przy starcie (`seedDemoUser`); production: czysty start (FR-9), konta przez CLI. |
 | 35 | Flagi runtime | `SEED_ON_START` on/off per środowisko; `LOG_LEVEL` przeniesiony do Etapu 6 (decyzja 38) — rewizja 2026-11-22. |
