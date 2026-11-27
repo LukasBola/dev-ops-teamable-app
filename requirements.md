@@ -53,6 +53,7 @@ Aplikacja (profil użytkownika) jest **pretekstem** — ma być na tyle prosta, 
 | 4.5 | Uwierzytelnianie (Better Auth) i profil per użytkownik | Sekrety poza repo, walidacja konfiguracji, migracje indeksów, testy bezpieczeństwa (pozytywne i negatywne) |
 | 5 | Wdrożenia na środowiska (dev/staging/prod) | CD, promocja artefaktów, sekrety, zmienne środowiskowe |
 | 6 | Obserwowalność i jakość | Logi, metryki, coverage gates, ewentualnie analiza statyczna |
+| 7 | Kubernetes + GitOps (Argo CD) | Klaster (kind), manifesty, GitOps pull-based, promocja przez PR, rollback przez `git revert`, atestacje obrazów |
 
 > Tabela jest orientacyjna i będzie aktualizowana. Kolejność etapów może się zmienić.
 
@@ -69,6 +70,22 @@ Szczegółowe projekty techniczne i plany powstają per etap w `docs/superpowers
 | 4.5 — Uwierzytelnianie | [2026-11-22-etap4-5-auth-design.md](docs/superpowers/specs/2026-11-22-etap4-5-auth-design.md) | [2026-11-22-etap4-5-auth.md](docs/superpowers/plans/2026-11-22-etap4-5-auth.md) |
 | 5 — Wdrożenia (CD) | [2026-06-17-etap5-wdrozenia-design.md](docs/superpowers/specs/2026-06-17-etap5-wdrozenia-design.md) | [2026-06-17-etap5-wdrozenia.md](docs/superpowers/plans/2026-06-17-etap5-wdrozenia.md) |
 | 6 — Obserwowalność i jakość | [2026-06-17-etap6-obserwowalnosc-jakosc-design.md](docs/superpowers/specs/2026-06-17-etap6-obserwowalnosc-jakosc-design.md) | [2026-06-17-etap6-obserwowalnosc-jakosc.md](docs/superpowers/plans/2026-06-17-etap6-obserwowalnosc-jakosc.md) |
+| 7 — Kubernetes + GitOps | [2026-11-22-etap7-kubernetes-gitops-design.md](docs/superpowers/specs/2026-11-22-etap7-kubernetes-gitops-design.md) (zalążek) | _(po brainstormingu)_ |
+
+---
+
+### 2.5 Backlog — pomysły odłożone do kolejnych etapów
+
+Pomysły zgłoszone, ale świadomie przesunięte. Każdy ma etap docelowy; przy brainstormingu tego etapu trafiają do jego specu (albo zostają odrzucone z powodem).
+
+| Pomysł | Co daje | Etap docelowy | Źródło |
+|---|---|---|---|
+| Skan obrazów Trivy (SARIF do zakładki Security) | Znane podatności (CVE) w obrazach przed wdrożeniem | 6 | review specu Etapu 5 (2026-11-22) |
+| ~~Przypinanie akcji GitHub po SHA + Dependabot `github-actions`~~ | Ochrona łańcucha dostaw CI przed podmianą akcji | **zrealizowane** przed Etapem 5 w hardeningu CI (PR #12, 2026-11-24; [plan](docs/superpowers/plans/2026-11-24-ci-hardening.md)) | review specu Etapu 5 (2026-11-22) |
+| Metryki DORA z Deployments API (częstotliwość wdrożeń, lead time, odsetek porażek) | Mierzalna jakość procesu dostarczania | 6 | review specu Etapu 5 (2026-11-22) |
+| Atestacje obrazów (provenance, SBOM) i ich weryfikacja przy wdrożeniu | Sprawdzalne pochodzenie i skład obrazu | 7 | review specu Etapu 5 (2026-11-22) |
+| Rollback: ponowne wdrożenie starego digestu (`workflow_dispatch`) vs `git revert` w GitOps | Porównanie dwóch modeli cofania wersji | 7 | review specu Etapu 5 (2026-11-22) |
+| release-please (automatyczny semver i PR wydania) | Wersjonowanie z Conventional Commits bez ręcznego tagowania | 7 | review specu Etapu 5 (2026-11-22) |
 
 ---
 
@@ -298,14 +315,17 @@ Etap 1 uznajemy za zakończony, gdy:
 
 | # | Temat | Decyzja |
 |---|-------|---------|
-| 30 | Cel wdrożenia | **Ephemeral w CI**: `compose pull` → `up` → smoke → `down`; nic nie żyje poza pipeline'em. |
-| 31 | Trigger CD | `main` → dev + staging (auto, sekwencyjnie, dopiero po udanym CI przez `workflow_run`); tag `v*` → production (approval gate). |
-| 32 | Promowany artefakt | **Ten sam obraz GHCR po SHA** (build once, deploy many); deploy nigdy nie buduje. |
-| 33 | Sekrety i zmienne | **GitHub Environments** (dev/staging/production); required reviewers na production. |
-| 34 | Dane per środowisko | dev/staging: `SEED_ON_START=true` (seed demo); production: czysty start (FR-9). |
-| 35 | Flagi runtime | `LOG_LEVEL` per środowisko (konsumowane w Etapie 6); `SEED_ON_START` on/off. |
-| 36 | Izolacja środowisk | Osobne compose project (`teamable_dev`/`_staging`/`_production`), różne porty. |
-| 37 | Smoke test | `/api/health` + curl frontendu po każdym deployu; błąd czerwieni job. |
+| 30 | Cel wdrożenia | **Ephemeral w CI**: weryfikacja podpisów → `pull` → `up` → smoke → `down`; nic nie żyje poza pipeline'em. |
+| 31 | Trigger CD | `main`: `docker` → `sign` → deploy dev → staging (manifest pary digestów); tag `v*`: `check-staging` (para z manifestu staging dla SHA) → re-tag → production (approval gate) → GitHub Release. Joby w `ci.yml`, kroki w reużywalnym `deploy.yml` — rewizja 2026-11-22, [ADR-0012](docs/adr/0012-promocja-obrazu-reuzywalny-deploy.md). |
+| 32 | Promowany artefakt | **Ten sam obraz GHCR** (build once, deploy many); para digestów z buildu do produkcji (outputy `docker` → manifest staging), nigdy rozwiązywana z etykiety; digest w podsumowaniu joba; deploy nigdy nie buduje (rewizja 2026-11-28). |
+| 33 | Sekrety i zmienne | **GitHub Environments** (dev/staging tylko z `main`, production tylko z tagów `v*` + required reviewers). |
+| 34 | Dane per środowisko | dev/staging: `SEED_ON_START=true` → backend zakłada/resetuje konto demo przy starcie (`seedDemoUser`); production: czysty start (FR-9), konta przez CLI. |
+| 35 | Flagi runtime | `SEED_ON_START` on/off per środowisko; `LOG_LEVEL` przeniesiony do Etapu 6 (decyzja 38) — rewizja 2026-11-22. |
+| 36 | Izolacja środowisk | Osobne compose project (`teamable_dev`/`_staging`/`_production`), różne porty, `concurrency` per środowisko. |
+| 37 | Smoke test | Health + SPA + `/api/profile` bez sesji → 401 + logowanie złym hasłem → 401 (nie 403); dev/staging także logowanie kontem demo → profil 200. Błąd czerwieni job. |
+| 56 | Podpisy obrazów | cosign keyless (OIDC) **i** kluczem w osobnym jobie `sign`; klucz w sekretach środowiska `signing` (tylko `main`), nie repo — zmiana 2026-11-27; deploy weryfikuje oba przed uruchomieniem. Numer po #55 (Graphify). [ADR-0013](docs/adr/0013-podpisy-obrazow-cosign.md) |
+| 57 | Release | Tag `vX.Y.Z` → re-tag obrazów bez rebuildu → po wdrożeniu prod `gh release create --generate-notes`. |
+| 58 | Kubernetes + GitOps | Osobny **Etap 7** (Kubernetes + Argo CD); Etap 5 zostaje przy Compose. |
 
 #### Decyzje — Etap 6 (Obserwowalność i jakość)
 
