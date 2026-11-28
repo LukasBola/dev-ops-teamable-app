@@ -33,3 +33,6 @@ graphify-out/*
 
 # Materiały lokalne (notatki, prezentacje do nauki) — poza repo
 temp/
+
+# pliki wymiany vima
+.*.sw?
